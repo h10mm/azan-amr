@@ -1,0 +1,251 @@
+package com.github.meypod.al_azan.core.presentation.components
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.github.meypod.al_azan.R
+
+@Immutable
+data class AudioPickerSection<T>(
+    /** Header shown above the section's first item; null renders the items with no header. */
+    val title: String?,
+    val options: List<T>,
+)
+
+/**
+ * A dropdown that opens a grouped sound picker bottom sheet, shared by the muezzin and reminder
+ * sound selectors. Each item can be previewed (play/stop) and the currently selected sound has a
+ * preview button beside the field. Optionally exposes "add from local files" (in the sheet header)
+ * and per-item delete. Generic over the host's own entry type [T]; the host supplies key/label
+ * accessors and receives the chosen [T] back in callbacks.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> AudioPickerField(
+    sections: List<AudioPickerSection<T>>,
+    selectedKey: String?,
+    playingId: String?,
+    optionKey: (T) -> String,
+    optionLabel: (T) -> String,
+    onSelect: (T) -> Unit,
+    onPreview: (T) -> Unit,
+    onStopPreview: () -> Unit,
+    modifier: Modifier = Modifier,
+    optionCanDelete: (T) -> Boolean = { false },
+    optionPreviewable: (T) -> Boolean = { true },
+    // Static leading icon (drawable res) for a non-previewable option, shown where the play button would
+    // be so the row aligns with its siblings instead of reading as a bare header. Ignored when previewable.
+    optionLeadingIcon: (T) -> Int? = { null },
+    optionSubtitle: (T) -> String? = { null },
+    // The id whose playback this option drives — usually its own key, but an option that delegates to
+    // another sound (e.g. "use default") returns that sound's id so the play/stop state stays in sync.
+    optionPreviewKey: (T) -> String = optionKey,
+    onAddLocalFile: ((filepath: String, name: String) -> Unit)? = null,
+    onDelete: ((T) -> Unit)? = null,
+    searchable: Boolean = true,
+) {
+    val flat = remember(sections) { sections.flatMap { it.options } }
+    // Title rendered above each titled section's leading item (keyed by that item's key).
+    val headerForKey = remember(sections, optionKey) {
+        buildMap {
+            sections.forEach { section ->
+                if (section.title != null) section.options.firstOrNull()?.let { put(optionKey(it), section.title) }
+            }
+        }
+    }
+    val selected = remember(flat, selectedKey, optionKey) { flat.firstOrNull { optionKey(it) == selectedKey } }
+    val addFromFilesLabel = stringResource(R.string.add_from_local_files)
+
+    var picked by remember { mutableStateOf<PickedAudio?>(null) }
+    val launchPicker = rememberAudioFilePicker { picked = it }
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding_compact)),
+    ) {
+        BottomSelect(
+            modifier = Modifier.weight(1f),
+            options = flat,
+            optionKey = optionKey,
+            optionLabel = optionLabel,
+            selectedKey = selectedKey,
+            searchable = searchable,
+            onSelect = onSelect,
+            headerContent = onAddLocalFile?.let {
+                {
+                    DropdownMenuItem(
+                        text = { Text(addFromFilesLabel) },
+                        leadingIcon = { Icon(painterResource(R.drawable.add), contentDescription = null) },
+                        onClick = launchPicker,
+                    )
+                    HorizontalDivider()
+                }
+            },
+            itemContent = { entry, isSelected, _, onSelectAndDismiss ->
+                val option = entry.value.first
+                val previewKey = optionPreviewKey(option)
+                Column {
+                    headerForKey[entry.key]?.let { AudioSectionHeader(it) }
+                    AudioOptionRow(
+                        label = entry.value.second,
+                        subtitle = optionSubtitle(option),
+                        selected = isSelected,
+                        playing = playingId == previewKey,
+                        previewable = optionPreviewable(option),
+                        leadingIcon = optionLeadingIcon(option),
+                        canDelete = onDelete != null && optionCanDelete(option),
+                        onPlayToggle = { if (playingId == previewKey) onStopPreview() else onPreview(option) },
+                        onClick = { onSelectAndDismiss(option) },
+                        onDelete = { onDelete?.invoke(option) },
+                    )
+                }
+            },
+        )
+        if (selected != null && optionPreviewable(selected)) {
+            val previewKey = optionPreviewKey(selected)
+            PreviewIconButton(
+                playing = playingId == previewKey,
+                onToggle = { if (playingId == previewKey) onStopPreview() else onPreview(selected) },
+            )
+        }
+    }
+
+    picked?.let { p ->
+        NewAudioDialog(
+            initialName = p.suggestedName,
+            onConfirm = { name ->
+                onAddLocalFile?.invoke(p.filepath, name)
+                picked = null
+            },
+            onDismiss = { picked = null },
+        )
+    }
+}
+
+@Composable
+fun PreviewIconButton(
+    playing: Boolean,
+    onToggle: () -> Unit,
+) {
+    IconButton(onClick = onToggle) {
+        Icon(
+            painterResource(if (playing) R.drawable.outline_stop_24 else R.drawable.outline_play_arrow_24),
+            contentDescription = stringResource(if (playing) R.string.stop else R.string.play),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
+private fun AudioSectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(
+            horizontal = dimensionResource(R.dimen.page_padding),
+            vertical = dimensionResource(R.dimen.element_padding_compact),
+        ),
+    )
+}
+
+@Composable
+private fun AudioOptionRow(
+    label: String,
+    subtitle: String?,
+    selected: Boolean,
+    playing: Boolean,
+    previewable: Boolean,
+    leadingIcon: Int?,
+    canDelete: Boolean,
+    onPlayToggle: () -> Unit,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    DropdownMenuItem(
+        text = {
+            Column {
+                Text(label, style = MaterialTheme.typography.bodyMedium)
+                subtitle?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        onClick = onClick,
+        leadingIcon = when {
+            previewable -> {
+                { PreviewIconButton(playing = playing, onToggle = onPlayToggle) }
+            }
+
+            leadingIcon != null -> {
+                {
+                    // Match the play button's footprint (an IconButton's min touch target) so this row's
+                    // label aligns with the previewable rows above it.
+                    Box(
+                        modifier = Modifier.size(48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painterResource(leadingIcon),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            else -> null
+        },
+        trailingIcon = if (selected || canDelete) {
+            {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (selected) {
+                        Icon(
+                            painterResource(R.drawable.baseline_check_24),
+                            contentDescription = stringResource(R.string.selected),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    if (canDelete) {
+                        IconButton(onClick = onDelete) {
+                            Icon(
+                                painterResource(R.drawable.delete),
+                                contentDescription = stringResource(R.string.delete),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            null
+        },
+    )
+}

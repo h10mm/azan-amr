@@ -1,0 +1,97 @@
+package com.github.meypod.al_azan.core.data.audio
+
+import android.content.Context
+import android.media.AudioManager
+import android.widget.Toast
+import androidx.core.content.getSystemService
+import com.github.meypod.al_azan.R
+import com.github.meypod.al_azan.core.data.locale.LocalizedResources
+import com.github.meypod.al_azan.core.domain.audio.AudioPreviewPlayer
+import com.github.meypod.al_azan.core.domain.model.reminder.ReminderAudioEntry
+import com.github.meypod.al_azan.core.domain.model.settings.AudioEntry
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/**
+ * Drives [AdhanPreviewPlaybackService] for previewing audio entries. State is process-global (held
+ * by the service), so every injected instance observes the same [playingId]. Uri resolution runs off
+ * the main thread because the default entry resolves via a [android.media.RingtoneManager] content query.
+ */
+class AudioPreviewPlayerImpl(
+    private val context: Context,
+    /** Resolves entry labels and the muted-hint toast in the app language. */
+    private val localizedResources: LocalizedResources,
+) : AudioPreviewPlayer {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    override val playingId: StateFlow<String?> = AdhanPreviewPlaybackService.playingId
+
+    override fun play(
+        entry: AudioEntry,
+        volumePercent: Int,
+    ) {
+        scope.launch {
+            val uri = entry.toAudioUri(context) ?: return@launch
+            AdhanPreviewPlaybackService.play(context, uri, entry.id, entry.label(), entry.loop, volumePercent)
+            // A custom volume overrides the media stream level itself, so a muted stream is irrelevant.
+            if (volumePercent !in 0..100) warnIfMediaMuted()
+        }
+    }
+
+    override fun play(entry: ReminderAudioEntry) {
+        scope.launch {
+            val uri = entry.toAudioUri(context) ?: return@launch
+            AdhanPreviewPlaybackService.play(context, uri, entry.previewId(), entry.previewLabel(), entry.loop)
+            warnIfMediaMuted()
+        }
+    }
+
+    override fun setVolume(volumePercent: Int) {
+        if (playingId.value == null) return
+        AdhanPreviewPlaybackService.setVolume(context, volumePercent)
+    }
+
+    override fun stop() = AdhanPreviewPlaybackService.stop(context)
+
+    /**
+     * Preview plays on [AudioManager.STREAM_MUSIC] (USAGE_MEDIA). If that stream is silent the user
+     * hears nothing; hint them to raise the volume instead of leaving them confused.
+     */
+    private suspend fun warnIfMediaMuted() {
+        val audioManager = context.getSystemService<AudioManager>() ?: return
+        if (audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) > 0) return
+        withContext(Dispatchers.Main) {
+            Toast.makeText(context, localizedResources.current.getString(R.string.preview_muted_hint), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun release() {
+        scope.cancel()
+        stop()
+    }
+
+    private fun AudioEntry.label(): String =
+        when (this) {
+            is AudioEntry.ResourceAudioEntry -> localizedResources.current.getString(labelResId)
+            is AudioEntry.ExternalAudioEntry -> label
+        }
+
+    private fun ReminderAudioEntry.previewId(): String =
+        when (this) {
+            is ReminderAudioEntry.ResourceReminderAudioEntry -> id
+            is ReminderAudioEntry.ExternalReminderAudioEntry -> id
+            ReminderAudioEntry.DefaultReminderAudioEntry -> ReminderAudioEntry.DefaultReminderAudioEntry.id
+        }
+
+    private fun ReminderAudioEntry.previewLabel(): String =
+        when (this) {
+            is ReminderAudioEntry.ResourceReminderAudioEntry -> label
+            is ReminderAudioEntry.ExternalReminderAudioEntry -> label
+            ReminderAudioEntry.DefaultReminderAudioEntry -> localizedResources.current.getString(R.string.reminder_default_sound)
+        }
+}

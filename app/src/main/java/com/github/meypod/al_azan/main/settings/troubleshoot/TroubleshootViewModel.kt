@@ -1,0 +1,63 @@
+package com.github.meypod.al_azan.main.settings.troubleshoot
+
+import android.app.Activity
+import android.app.NotificationManager
+import android.content.Context
+import androidx.core.content.getSystemService
+import androidx.lifecycle.ViewModel
+import com.github.meypod.al_azan.core.presentation.navigation.NavigationController
+import com.github.meypod.al_azan.core.presentation.navigation.Route
+import com.github.meypod.al_azan.core.util.device.AutostartUtils
+import com.github.meypod.al_azan.core.util.device.DeviceUtils
+import com.github.meypod.al_azan.core.util.device.PowerManagerUtils
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import javax.inject.Inject
+
+@HiltViewModel
+class TroubleshootViewModel
+@Inject constructor(
+    @param:ApplicationContext private val context: Context,
+) : ViewModel() {
+    private val isTelevision = DeviceUtils.isTelevision(context)
+    private val _uiState = MutableStateFlow(TroubleshootUiState(isTelevision = isTelevision))
+    val uiState = _uiState.asStateFlow()
+
+    fun onAction(action: TroubleshootUiAction) {
+        when (action) {
+            is TroubleshootUiAction.OnAppIsAllowedToKeepRunningClick -> onAllowAppToKeepRunningClick(action.activity)
+            is TroubleshootUiAction.OnOpenPowerManagerSettingsClick -> onOpenPowerManagerSettingsClick(action.activity)
+            is TroubleshootUiAction.OnOpenAutostartSettingsClick -> AutostartUtils.openAutostartSettings(action.activity)
+            is TroubleshootUiAction.OnAdvancedSettingsClick -> onAdvancedSettingsClick(action.route)
+            is TroubleshootUiAction.OnLifecycleChanged -> onLifecycleChanged()
+        }
+    }
+
+    private fun onOpenPowerManagerSettingsClick(activity: Activity?) {
+        PowerManagerUtils.openPowerManagerSettings(activity)
+    }
+
+    private fun onAllowAppToKeepRunningClick(activity: Activity?) {
+        PowerManagerUtils.openBatteryOptimizationSettings(activity)
+    }
+
+    private fun onAdvancedSettingsClick(route: Route) {
+        NavigationController.navigateTo(route)
+    }
+
+    private fun onLifecycleChanged() {
+        _uiState.update {
+            it.copy(
+                appIsAllowedToKeepRunning = !PowerManagerUtils.isBatteryOptimizationEnabled(context),
+                powerManagerInfo = PowerManagerUtils.getPowerManagerInfo(context),
+                autostartAvailable = AutostartUtils.hasAutostartSettings(context),
+                dndAccessGranted =
+                    context.getSystemService<NotificationManager>()?.isNotificationPolicyAccessGranted == true,
+                isTelevision = isTelevision,
+            )
+        }
+    }
+}

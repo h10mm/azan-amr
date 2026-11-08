@@ -1,0 +1,2 @@
+- Fix volume button not stopping adhan when screen is off
+- Volume no longer changes when the mentioned feature above is enabled

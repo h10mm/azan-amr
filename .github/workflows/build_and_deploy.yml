@@ -1,0 +1,165 @@
+name: build
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: build bundle
+      if: ${{ github.event_name == 'release' }}
+      run: ./gradlew --no-daemon :app:bundleRelease --stacktrace
+
+    - name: build apk
+      run: ./gradlew --no-daemon :app:assembleRelease --stacktrace
+
+    - name: Rename apk
+      working-directory: app/build/outputs/apk/release
+      run: |
+        set -euo pipefail
+        meta=output-metadata.json
+        vn=$(jq -er '.elements[0].versionName' "$meta")
+        vc=$(jq -er '.elements[0].versionCode' "$meta")
+        src=$(jq -er '.elements[0].outputFile' "$meta")
+        dst="al-azan--release-${vn}-universal-${vc}.apk"
+        mv "$src" "$dst"
+        test -f "$dst"
+        echo "renamed $src -> $dst"
+
+    - name: Sign App Apk
+      uses: r0adkll/sign-android-release@v1
+      with:
+        releaseDirectory: app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+        alias: ${{ secrets.ANDROID_ALIAS }}
+        keyStorePassword: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      env:
+        BUILD_TOOLS_VERSION: "36.0.0"
+
+    - name: Sign App Bundle
+      id: sign_aab
+      if: ${{ github.event_name == 'release' }}
+      uses: r0adkll/sign-android-release@v1
+      with:
+        releaseDirectory: app/build/outputs/bundle/release
+        signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+        alias: ${{ secrets.ANDROID_ALIAS }}
+        keyStorePassword: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      env:
+        BUILD_TOOLS_VERSION: "36.0.0"
+
+    - name: Upload apk artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: signed-apk
+        path: app/build/outputs/apk/release/*-signed.apk
+        if-no-files-found: error
+
+    - name: Upload bundle artifact
+      if: ${{ github.event_name == 'release' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: signed-bundle
+        path: app/build/outputs/bundle/release/*.aab
+        if-no-files-found: error
+
+  release-github:
+    needs: build
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download apk artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: signed-apk
+        path: artifacts/apk
+
+    - name: Download bundle artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: signed-bundle
+        path: artifacts/bundle
+
+    - name: Release on GitHub
+      uses: ncipollo/release-action@v1
+      with:
+        prerelease: true
+        omitBody: true
+        omitBodyDuringUpdate: true
+        omitName: true
+        allowUpdates: true
+        replacesArtifacts: true
+        updateOnlyUnreleased: true
+        artifacts: artifacts/apk/*-signed.apk,artifacts/bundle/*.aab
+
+  play-store:
+    needs: build
+    if: ${{ github.event_name == 'release' && !contains(github.ref, '-rc') }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download bundle artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: signed-bundle
+        path: artifacts/bundle
+
+    - name: Resolve aab path
+      id: aab
+      run: |
+        set -euo pipefail
+        aab=$(ls artifacts/bundle/*.aab | head -n1)
+        test -f "$aab"
+        echo "path=$aab" >> "$GITHUB_OUTPUT"
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+
+    - name: Install fastlane
+      run: gem install fastlane --no-document
+
+    # Uploads only the signed AAB. No listing/metadata/changelogs/images
+    # (those are pushed manually via the update-store-listing workflow).
+    - name: Push to Play Store
+      env:
+        SUPPLY_JSON_KEY_DATA: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+        AAB_PATH: ${{ steps.aab.outputs.path }}
+      run: |
+        fastlane supply \
+          --package_name com.github.meypod.al_azan \
+          --aab "$AAB_PATH" \
+          --skip_upload_metadata true \
+          --skip_upload_images true \
+          --skip_upload_screenshots true \
+          --track internal \
+          --release_status draft

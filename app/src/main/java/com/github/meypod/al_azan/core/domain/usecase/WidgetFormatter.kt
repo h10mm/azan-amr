@@ -1,0 +1,43 @@
+package com.github.meypod.al_azan.core.domain.usecase
+
+import com.github.meypod.al_azan.core.domain.model.settings.NumberingSystem
+import com.github.meypod.al_azan.core.domain.model.widget.HeaderDateFormat
+import kotlin.time.Instant
+
+/**
+ * Locale/calendar/time formatting and date math used by [BuildWidgetDataUseCase], behind an interface
+ * so the use case stays free of `android.icu` and can be unit tested on the JVM.
+ */
+interface WidgetFormatter {
+    fun formatPrayerTime(
+        instant: Instant,
+        is24Hour: Boolean,
+        numberingSystem: NumberingSystem,
+        locale: String,
+    ): String
+
+    fun formatDate(
+        instant: Instant,
+        locale: String,
+        calendar: String,
+        numberingSystem: NumberingSystem,
+        /** When true, prefix the weekday name (e.g. "Friday, 12 Rajab 1447"). */
+        withDayName: Boolean = false,
+        format: HeaderDateFormat = HeaderDateFormat.Full,
+    ): String
+
+    /** Time-zone aware day shift (used for the Hijri date offset). */
+    fun adjustDays(
+        instant: Instant,
+        days: Int,
+    ): Instant
+
+    /** True when both instants fall on the same Gregorian (calendar) day in the system time zone. */
+    fun isSameDay(
+        a: Instant,
+        b: Instant,
+    ): Boolean
+
+    /** Epoch millis of the start of the day after [instant]. */
+    fun nextDayBeginningMillis(instant: Instant): Long
+}

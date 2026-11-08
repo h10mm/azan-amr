@@ -1,0 +1,392 @@
+package com.github.meypod.al_azan.main.home.components
+
+import android.icu.text.DateFormat
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonColors
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
+import com.github.meypod.al_azan.R
+import com.github.meypod.al_azan.core.domain.model.adhan.i18n
+import com.github.meypod.al_azan.core.domain.model.adhan.timesOrNull
+import com.github.meypod.al_azan.core.domain.model.calculation.CalculationAdjustments
+import com.github.meypod.al_azan.core.domain.model.calculation.CalculationLocationDetail
+import com.github.meypod.al_azan.core.domain.model.calendar.CalendarSystem
+import com.github.meypod.al_azan.core.domain.model.favorite_location.StaticFavoriteLocation
+import com.github.meypod.al_azan.core.domain.usecase.GetNextShariaTimesUseCase
+import com.github.meypod.al_azan.core.domain.usecase.GetShariaTimesUseCase
+import com.github.meypod.al_azan.core.domain.util.addDaysTimeZoneAware
+import com.github.meypod.al_azan.core.domain.util.formatInstant
+import com.github.meypod.al_azan.core.domain.util.toLocalDate
+import com.github.meypod.al_azan.core.presentation.AlAzanTheme
+import com.github.meypod.al_azan.core.presentation.DarkTertiary
+import com.github.meypod.al_azan.core.presentation.components.CompactOutlinedTextField
+import com.github.meypod.al_azan.core.presentation.components.FakeFilledIconButton
+import com.github.meypod.al_azan.core.presentation.components.calendar.CalendarDatePickerDialog
+import com.github.meypod.al_azan.core.presentation.components.calendar.rememberUserPickerCalendars
+import com.github.meypod.al_azan.core.presentation.util.patternedBackground
+import com.github.meypod.al_azan.core.presentation.util.rememberPatternImageBitmap
+import com.github.meypod.al_azan.main.home.HomeUiAction
+import com.github.meypod.al_azan.main.home.HomeUiState
+import io.github.meypod.adhan_kotlin.CalculationMethod
+import io.github.meypod.adhan_kotlin.MidnightMethod
+import kotlin.time.Instant
+
+@Composable
+fun HomeHeader(
+    uiState: HomeUiState,
+    wideLayout: Boolean = false,
+    onAction: (HomeUiAction) -> Unit,
+) {
+    val classic = uiState.themeColor.isClassic()
+    // Held here, not in the date column: rotating moves that column between layouts, which would
+    // otherwise close an open date picker.
+    var pickingDate by rememberSaveable { mutableStateOf(false) }
+    val headerContentColor = if (classic) MaterialTheme.colorScheme.onSurface else Color.White
+    val countdownColor = if (classic) MaterialTheme.colorScheme.onSurface else DarkTertiary
+    val patternImage = rememberPatternImageBitmap(R.drawable.pattern)
+    val patternBackgroundColor =
+        colorResource(if (uiState.themeColor.isDark()) R.color.header_background_dark else R.color.header_background_light)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .then(
+                if (classic) {
+                    Modifier
+                } else {
+                    Modifier.patternedBackground(
+                        pattern = patternImage,
+                        backgroundColor = patternBackgroundColor,
+                        patternAlpha = 0.03f,
+                    )
+                },
+            )
+            .padding(dimensionResource(R.dimen.element_padding_compact)),
+    ) {
+        val iconButtonColors = IconButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+            disabledContentColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (wideLayout) {
+                Arrangement.spacedBy(dimensionResource(R.dimen.element_padding))
+            } else {
+                Arrangement.SpaceBetween
+            },
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.tiny_padding)),
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.medium)
+                    .clickable(onClick = { onAction(HomeUiAction.OnPrevDayClick) })
+                    .semantics(mergeDescendants = true) {
+                        role = Role.Button
+                    }
+                    .padding(dimensionResource(R.dimen.tiny_padding)),
+            ) {
+                FakeFilledIconButton(colors = iconButtonColors) {
+                    Icon(painterResource(R.drawable.arrow_back), contentDescription = null)
+                }
+                Text(
+                    stringResource(R.string.prev_day),
+                    color = headerContentColor,
+                    style = MaterialTheme.typography.labelLarge,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            // Landscape with room: pull the weekday/lunar date up between the two nav buttons
+            // so it no longer costs a separate row of vertical space.
+            if (wideLayout) {
+                HomeDateColumn(
+                    uiState = uiState,
+                    contentColor = headerContentColor,
+                    onAction = onAction,
+                    picking = pickingDate,
+                    onPickingChange = { pickingDate = it },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.tiny_padding)),
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.medium)
+                    .clickable(onClick = { onAction(HomeUiAction.OnNextDayClick) })
+                    .semantics(mergeDescendants = true) {
+                        role = Role.Button
+                    }
+                    .padding(dimensionResource(R.dimen.tiny_padding)),
+            ) {
+                Text(
+                    stringResource(R.string.next_day),
+                    color = headerContentColor,
+                    style = MaterialTheme.typography.labelLarge,
+                    textAlign = TextAlign.Center,
+                )
+                FakeFilledIconButton(colors = iconButtonColors) {
+                    Icon(painterResource(R.drawable.arrow_forward), contentDescription = null)
+                }
+            }
+        }
+        if (wideLayout) {
+            Spacer(Modifier.height(dimensionResource(R.dimen.element_padding_compact)))
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                HomeDateColumn(
+                    uiState = uiState,
+                    contentColor = headerContentColor,
+                    onAction = onAction,
+                    picking = pickingDate,
+                    onPickingChange = { pickingDate = it },
+                )
+            }
+            Spacer(Modifier.height(dimensionResource(R.dimen.element_padding)))
+        }
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.tiny_padding)),
+            itemVerticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (uiState.showNextPrayerCountdown &&
+                uiState.nextShariaTime != null
+            ) {
+                Arrangement.SpaceBetween
+            } else {
+                Arrangement.Center
+            },
+        ) {
+            Button(
+                onClick = { onAction(HomeUiAction.OnLocationTextClick) },
+                colors = ButtonColors(
+                    Color.Transparent,
+                    headerContentColor,
+                    headerContentColor.copy(alpha = 0.6f),
+                    Color.Transparent,
+                ),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.icon_padding)),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(painterResource(R.drawable.map_marker), contentDescription = stringResource(R.string.location_title))
+                    Text(
+                        uiState.location?.locationDetail?.toDisplayString()
+                            ?: stringResource(R.string.set_location_hint),
+                        color = headerContentColor,
+                        style = MaterialTheme.typography.labelMedium,
+                        textDecoration = TextDecoration.Underline,
+                    )
+                }
+            }
+
+            if (uiState.showNextPrayerCountdown && uiState.nextShariaTime != null) {
+                CompactOutlinedTextField(
+                    uiState.countdownText,
+                    {},
+                    label = { Text(uiState.nextShariaTime.prayer.i18n()) },
+                    colors = OutlinedTextFieldDefaults.colors().copy(
+                        unfocusedTextColor = countdownColor,
+                        disabledIndicatorColor = countdownColor,
+                        disabledTextColor = countdownColor,
+                        disabledLabelColor = countdownColor,
+                    ),
+                    shape = if (classic) MaterialTheme.shapes.medium else MaterialTheme.shapes.large,
+                    readOnly = true,
+                    enabled = false,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        textAlign = TextAlign.Center,
+                        // Tabular figures keep digit advance-widths equal across all numbering systems,
+                        // unlike FontFamily.Monospace which lacks non-Latin (Arabic/Persian) digit glyphs.
+                        fontFeatureSettings = "tnum",
+                    ),
+                    modifier = Modifier.width(IntrinsicSize.Max),
+                )
+            }
+        }
+        if (!uiState.themeColor.isClassic()) {
+            Spacer(Modifier.height(dimensionResource(R.dimen.home_card_padding)))
+        }
+    }
+}
+
+/** Weekday and date of the viewed day; tapping it opens a date picker to jump to another day. */
+@Composable
+private fun HomeDateColumn(
+    uiState: HomeUiState,
+    contentColor: Color,
+    onAction: (HomeUiAction) -> Unit,
+    picking: Boolean,
+    onPickingChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val calendars = rememberUserPickerCalendars(
+        secondaryCalendar = uiState.secondaryCalendar,
+        secondary = CalendarSystem(uiState.calendar, uiState.locale),
+        lunar = CalendarSystem(uiState.arabicCalendar, uiState.arabicCalendarLocale, uiState.hijriDateAdjustment),
+    )
+    // A plain rounded touch surface rather than a button, so the header keeps its size.
+    Column(
+        modifier = modifier
+            .clip(MaterialTheme.shapes.small)
+            .clickable(
+                onClickLabel = stringResource(R.string.choose_date),
+                role = Role.Button,
+                onClick = { onPickingChange(true) },
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            formatInstant(uiState.viewingInstant, uiState.locale, uiState.calendar, DateFormat.WEEKDAY),
+            color = contentColor,
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            if (uiState.swapHomeCalendars) {
+                formatInstant(
+                    uiState.viewingInstant,
+                    uiState.locale,
+                    uiState.calendar,
+                    numberingSystem = uiState.numberingSystem,
+                )
+            } else {
+                formatInstant(
+                    addDaysTimeZoneAware(uiState.viewingInstant, uiState.hijriDateAdjustment),
+                    uiState.arabicCalendarLocale,
+                    uiState.arabicCalendar,
+                    numberingSystem = uiState.numberingSystem,
+                )
+            },
+            color = contentColor,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+        )
+    }
+    if (picking) {
+        CalendarDatePickerDialog(
+            initial = uiState.viewingInstant.toLocalDate(),
+            onConfirm = { date, calendarIndex ->
+                onPickingChange(false)
+                onAction(HomeUiAction.OnDatePicked(date, calendarIndex))
+            },
+            onDismiss = { onPickingChange(false) },
+            calendars = calendars,
+            weekLocale = uiState.locale,
+            numberingSystem = uiState.numberingSystem,
+            firstDayOfWeek = uiState.firstDayOfWeek,
+            today = uiState.currentInstant.toLocalDate(),
+            // The calendar last used here, else the one the header shows the date in.
+            initialCalendarIndex = uiState.datePickerCalendarIndex ?: if (uiState.swapHomeCalendars) 0 else 1,
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun HomeHeaderPreview() {
+    AlAzanTheme {
+        val location = StaticFavoriteLocation("foo", CalculationLocationDetail(0.0, 0.0, label = "Null Island"))
+        val instant = Instant.fromEpochMilliseconds(System.currentTimeMillis())
+        val getShariaTimesUseCase = GetShariaTimesUseCase()
+        val shariahTimes = getShariaTimesUseCase(
+            instant = instant,
+            calculationParameters = CalculationMethod.MOON_SIGHTING_COMMITTEE.parameters,
+            calculationAdjustments = CalculationAdjustments(),
+            arabicCalendar = "islamic",
+            midnightMethod = MidnightMethod.SunsetToFajr,
+            locationDetail = CalculationLocationDetail(0.0, 0.0),
+        ).timesOrNull
+        val nextShariaTime = GetNextShariaTimesUseCase(getShariaTimesUseCase)(
+            instant = instant,
+            calculationParameters = CalculationMethod.MOON_SIGHTING_COMMITTEE.parameters,
+            calculationAdjustments = CalculationAdjustments(),
+            arabicCalendar = "islamic",
+            midnightMethod = MidnightMethod.SunsetToFajr,
+            locationDetail = CalculationLocationDetail(0.0, 0.0),
+        )
+        HomeHeader(
+            HomeUiState(
+                location = location,
+                shariaTimes = shariahTimes,
+                showNextPrayerCountdown = true,
+                nextShariaTime = nextShariaTime,
+            ),
+            onAction = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun HomeHeaderWideLayoutPreview() {
+    AlAzanTheme {
+        val location = StaticFavoriteLocation("foo", CalculationLocationDetail(0.0, 0.0, label = "Null Island"))
+        val instant = Instant.fromEpochMilliseconds(System.currentTimeMillis())
+        val getShariaTimesUseCase = GetShariaTimesUseCase()
+        val shariahTimes = getShariaTimesUseCase(
+            instant = instant,
+            calculationParameters = CalculationMethod.MOON_SIGHTING_COMMITTEE.parameters,
+            calculationAdjustments = CalculationAdjustments(),
+            arabicCalendar = "islamic",
+            midnightMethod = MidnightMethod.SunsetToFajr,
+            locationDetail = CalculationLocationDetail(0.0, 0.0),
+        ).timesOrNull
+        val nextShariaTime = GetNextShariaTimesUseCase(getShariaTimesUseCase)(
+            instant = instant,
+            calculationParameters = CalculationMethod.MOON_SIGHTING_COMMITTEE.parameters,
+            calculationAdjustments = CalculationAdjustments(),
+            arabicCalendar = "islamic",
+            midnightMethod = MidnightMethod.SunsetToFajr,
+            locationDetail = CalculationLocationDetail(0.0, 0.0),
+        )
+        HomeHeader(
+            HomeUiState(
+                location = location,
+                shariaTimes = shariahTimes,
+                showNextPrayerCountdown = true,
+                nextShariaTime = nextShariaTime,
+            ),
+            wideLayout = true,
+            onAction = {},
+        )
+    }
+}

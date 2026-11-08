@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.TURN_SCREEN_ON" />
+    <!-- Launch the full-screen adhan alarm over the lock screen (required on Android 14+) -->
+    <uses-permission
+        android:name="android.permission.USE_FULL_SCREEN_INTENT"
+        tools:ignore="FullScreenIntentPolicy" />
+
+    <!--
+      "Display over other apps". The only background-activity-launch exemption that doesn't expire:
+      without it, "Always open the alarm screen" is silently blocked on Android 15+ (and on OEM skins
+      that gate background starts behind this toggle). Optional — the full-screen intent still works.
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- need background access on Android 10+ for traveling mode -->
+    <uses-permission
+        android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
+        tools:ignore="BackgroundLocationPolicy" />
+    <!-- For Xiaomi devices to enable heads-up notifications as default (https://github.com/invertase/notifee/issues/296) -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NOTIFICATION_POLICY"
+        android:minSdkVersion="23" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- To detect incoming and active calls to not play sound -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- Foreground service for previewing adhan audio -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- this removes ACCESS_NETWORK_STATE permission added by work manager:  -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+
+    <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.App.Starting">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Full-screen adhan alarm; shows over the lock screen and turns the screen on. -->
+        <activity
+            android:name=".alarm.AlarmActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:theme="@style/Theme.AlAzan"
+            android:turnScreenOn="true" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- An app update invalidates our scheduled alarms; re-arm them (no missed catch-up). -->
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".TimeChangeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.ACTION_TIME_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".LocaleChangeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Reconciles alarms (exact <-> inexact) when exact-alarm permission is granted/revoked (API 31+),
+             so scheduling is correct no matter the order the user grants permissions. -->
+        <receiver
+            android:name=".ExactAlarmPermissionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Fires scheduled widget-redraw + adhan alarms. The cancel filter receives the pre-alarm's
+             "Cancel" action (sent targeted to this package). -->
+        <receiver
+            android:name=".AlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.github.meypod.al_azan.action.CANCEL_ADHAN" />
+                <action android:name="com.github.meypod.al_azan.action.UNSILENCE" />
+                <action android:name="com.github.meypod.al_azan.action.CANCEL_REMINDER" />
+                <action android:name="com.github.meypod.al_azan.action.STOP_SOFT_SOUND" />
+                <action android:name="com.github.meypod.al_azan.action.RAMADAN_REMIND_NEXT_YEAR" />
+                <action android:name="com.github.meypod.al_azan.action.RAMADAN_DONT_SHOW_AGAIN" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Plays the adhan as a foreground service when an alarm fires. -->
+        <service
+            android:name=".playback.PlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!-- Home-screen prayer-times app widget. -->
+        <receiver
+            android:name=".widget.PrayerTimesWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/prayer_times_widget_info" />
+        </receiver>
+
+        <!-- 1x1 next-prayer app widget: prayer name + countdown chronometer. -->
+        <receiver
+            android:name=".widget.NextPrayerWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/next_prayer_widget_info" />
+        </receiver>
+
+        <!-- User-authored custom widget: layout/colors composed in the in-app builder. -->
+        <receiver
+            android:name=".widget.CustomWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/custom_widget_info" />
+        </receiver>
+
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
+        <service
+            android:name=".core.data.audio.AdhanPreviewPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!-- AppFunctions entry point, generated from BaseAlAzanAppFunctionService. Only the system binds it (API 36+). -->
+        <service
+            android:name=".appfunctions.AlAzanAppFunctionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
+            tools:targetApi="36">
+            <property
+                android:name="android.app.appfunctions.schema"
+                android:value="app_functions_schema.xsd" />
+            <property
+                android:name="android.app.appfunctions.v2"
+                android:value="app_functions.xml" />
+            <intent-filter>
+                <action android:name="android.app.appfunctions.AppFunctionService" />
+            </intent-filter>
+        </service>
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:node="remove" />
+    </application>
+
+</manifest>

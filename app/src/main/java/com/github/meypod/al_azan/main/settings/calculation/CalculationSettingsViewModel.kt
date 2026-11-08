@@ -1,0 +1,91 @@
+package com.github.meypod.al_azan.main.settings.calculation
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.github.meypod.al_azan.core.domain.model.calculation.needsPolarCircleResolution
+import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepository
+import com.github.meypod.al_azan.core.domain.repository.FavoriteLocationsRepository
+import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
+import com.github.meypod.al_azan.core.presentation.navigation.NavigationController
+import com.github.meypod.al_azan.core.presentation.navigation.Route
+import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.meypod.adhan_kotlin.CalculationMethod
+import io.github.meypod.adhan_kotlin.CalculationParameters
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class CalculationSettingsViewModel
+@Inject constructor(
+    private val calculationSettingsRepository: CalculationSettingsRepository,
+    private val settingsRepository: SettingsRepository,
+    private val favoriteLocationsRepository: FavoriteLocationsRepository,
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(CalculationSettingsUiState())
+    val uiState = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            combine(
+                calculationSettingsRepository.data,
+                settingsRepository.data,
+                favoriteLocationsRepository.data,
+            ) { calcSettings, settings, locations ->
+                val location = locations.firstOrNull { it.id == calcSettings.locationId }?.locationDetail
+                _uiState.update { state ->
+                    state.copy(
+                        calculationParameters = calcSettings.parameters,
+                        selectedCalendar = settings.selectedArabicCalendar,
+                        polarCircleUnresolved = calcSettings.parameters != null && location != null &&
+                            location.needsPolarCircleResolution(calcSettings.parameters),
+                    )
+                }
+            }.collect()
+        }
+    }
+
+    fun onAction(action: CalculationSettingsUiAction) {
+        when (action) {
+            is CalculationSettingsUiAction.OnAdvancedSettingsClick -> onAdvancedSettingsClick(action.route)
+            is CalculationSettingsUiAction.OnAdjustmentsClick -> onAdjustmentsClick(action.route)
+            is CalculationSettingsUiAction.OnCalculationMethodChange -> onCalculationMethodChange(action.value)
+            is CalculationSettingsUiAction.OnCalculationMethodParamsEdited -> onCalculationMethodParamsEdited(action.value)
+            is CalculationSettingsUiAction.OnLunarCalendarChange -> onCalendarChange(action.value)
+        }
+    }
+
+    private fun onAdvancedSettingsClick(route: Route) {
+        NavigationController.navigateTo(route)
+    }
+
+    private fun onAdjustmentsClick(route: Route) {
+        NavigationController.navigateTo(route)
+    }
+
+    private fun onCalculationMethodChange(value: CalculationMethod) {
+        viewModelScope.launch {
+            calculationSettingsRepository.update {
+                it.copy(parameters = value.parameters)
+            }
+        }
+    }
+
+    private fun onCalculationMethodParamsEdited(value: CalculationParameters) {
+        viewModelScope.launch {
+            calculationSettingsRepository.update {
+                it.copy(parameters = value)
+            }
+        }
+    }
+
+    private fun onCalendarChange(value: String) {
+        viewModelScope.launch {
+            settingsRepository.update { it.copy(selectedArabicCalendar = value) }
+        }
+    }
+}

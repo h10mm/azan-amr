@@ -1,0 +1,46 @@
+package com.github.meypod.al_azan.main.home
+
+import androidx.compose.runtime.Immutable
+import com.github.meypod.al_azan.core.domain.model.adhan.Prayer
+import com.github.meypod.al_azan.core.domain.model.adhan.ShariaTimes
+import com.github.meypod.al_azan.core.domain.model.favorite_location.FavoriteLocation
+import com.github.meypod.al_azan.core.domain.model.settings.HomeShortcut
+import com.github.meypod.al_azan.core.domain.model.settings.NumberingSystem
+import com.github.meypod.al_azan.core.domain.model.settings.SecondaryCalendar
+import com.github.meypod.al_azan.core.domain.model.settings.ThemeColor
+import com.github.meypod.al_azan.core.domain.usecase.ShariaTimeDetails
+import kotlinx.datetime.DayOfWeek
+import kotlin.time.Instant
+
+@Immutable
+data class HomeUiState(
+    val themeColor: ThemeColor = ThemeColor.Default,
+    val currentInstant: Instant = Instant.fromEpochMilliseconds(System.currentTimeMillis()),
+    val viewingInstant: Instant = Instant.fromEpochMilliseconds(System.currentTimeMillis()),
+    val arabicCalendar: String = "islamic",
+    val arabicCalendarLocale: String = "en-US",
+    val hijriDateAdjustment: Int = 0,
+    val calendar: String = "gregorian",
+    val secondaryCalendar: SecondaryCalendar = SecondaryCalendar.Gregorian,
+    val firstDayOfWeek: DayOfWeek = DayOfWeek.SUNDAY,
+    /** Calendar last confirmed in the header's date picker, reopened next time; null until then. */
+    val datePickerCalendarIndex: Int? = null,
+    val locale: String = "en-US",
+    val numberingSystem: NumberingSystem = NumberingSystem.Default,
+    val location: FavoriteLocation? = null,
+    val isCalculationConfigured: Boolean = false,
+    val showNextPrayerCountdown: Boolean = true,
+    val shariaTimes: ShariaTimes? = null,
+    /** Location and method are set, yet they define no times for the viewed day (see [com.github.meypod.al_azan.core.domain.usecase.GetShariaTimesUseCase]). */
+    val prayerTimesUnresolvable: Boolean = false,
+    val nextShariaTime: ShariaTimeDetails? = null,
+    val highlightedShariaTime: ShariaTimeDetails? = null,
+    val countdownText: String = "--:--:--",
+    val is24Hour: Boolean = true,
+    val hiddenPrayers: List<Prayer> = emptyList(),
+    val skippedPrayers: Set<Prayer> = emptySet(),
+    val isDeveloper: Boolean = false,
+    val homeShortcuts: List<HomeShortcut> = emptyList(),
+    val hideToolbarCalendar: Boolean = false,
+    val swapHomeCalendars: Boolean = false,
+)
