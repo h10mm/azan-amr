@@ -14,9 +14,9 @@ import com.github.meypod.al_azan.core.presentation.AlAzanTheme
 fun IntroTitle(resId: Int) {
     Text(
         text = stringResource(resId),
-        style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.onPrimaryContainer,
-        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.ExtraBold,
         textAlign = TextAlign.Center,
     )
 }

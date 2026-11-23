@@ -4,13 +4,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.AudioManager
 import android.media.MediaMetadata
 import android.media.VolumeProvider
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Reports a hardware volume-key press while a sound plays, so the caller can treat it as a dismiss.
@@ -40,14 +43,18 @@ class VolumeKeyDismissMonitor(
     )
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val dismissed = AtomicBoolean(false)
+    private var startedAtRealtime = 0L
     private var session: MediaSession? = null
     private var receiver: BroadcastReceiver? = null
 
     fun start() {
+        startedAtRealtime = SystemClock.elapsedRealtime()
         session = createSession()
-        // Only needed when the reliable path is unavailable; otherwise the session absorbs the press and
-        // an unrelated stream change here could falsely cut the sound short.
-        if (session == null) registerVolumeReceiver()
+        // Register the volume broadcast receiver as well so that when playing on STREAM_ALARM (where
+        // OEM skins like MIUI route hardware volume keys to STREAM_ALARM instead of MediaSession),
+        // pressing Volume Up or Volume Down still immediately dismisses the Adhan.
+        registerVolumeReceiver()
     }
 
     fun stop() {
@@ -61,6 +68,7 @@ class VolumeKeyDismissMonitor(
     }
 
     private fun dismiss() {
+        if (!dismissed.compareAndSet(false, true)) return
         stop()
         onDismiss()
     }
@@ -69,10 +77,13 @@ class VolumeKeyDismissMonitor(
         val session = runCatching { MediaSession(context, SESSION_TAG) }.getOrNull() ?: return null
         val provider = object : VolumeProvider(VOLUME_CONTROL_RELATIVE, VOLUME_PROVIDER_MAX, VOLUME_PROVIDER_MAX / 2) {
             override fun onAdjustVolume(direction: Int) {
+                if (SystemClock.elapsedRealtime() - startedAtRealtime < 1500L) return
                 if (direction != 0) dismiss() // any up/down press dismisses
             }
 
-            override fun onSetVolumeTo(volume: Int) = dismiss()
+            override fun onSetVolumeTo(volume: Int) {
+                // Do not dismiss on absolute volume set: system audio ducking / notification events call this.
+            }
         }
         val armed = runCatching {
             // A callback (with an explicit main-thread handler) must exist for the platform MediaSession
@@ -80,7 +91,8 @@ class VolumeKeyDismissMonitor(
             // framework routes the key to our session but the VolumeProvider callback is silently dropped.
             session.setCallback(
                 object : MediaSession.Callback() {
-                    override fun onStop() = dismiss()
+                    // Do NOT override onStop/onPause to dismiss: incoming notifications or other media apps
+                    // (e.g. Reels/WhatsApp) cause the system to send onStop to active MediaSessions.
                 },
                 mainHandler,
             )
@@ -116,7 +128,15 @@ class VolumeKeyDismissMonitor(
                 c: Context?,
                 i: Intent?,
             ) {
-                if (i != null) dismiss()
+                if (i == null) return
+                // Ignore initial stream setup broadcasts during the first 1500ms of playback.
+                if (SystemClock.elapsedRealtime() - startedAtRealtime < 1500L) return
+                val streamType = i.getIntExtra("android.media.EXTRA_VOLUME_STREAM_TYPE", -1)
+                if (streamType != AudioManager.STREAM_ALARM) return
+                val newVol = i.getIntExtra("android.media.EXTRA_VOLUME_STREAM_VALUE", -1)
+                val prevVol = i.getIntExtra("android.media.EXTRA_PREV_VOLUME_STREAM_VALUE", -1)
+                if (newVol == -1 || prevVol == -1 || newVol == prevVol) return
+                dismiss()
             }
         }
         this.receiver = receiver

@@ -160,15 +160,20 @@ object PowerManagerUtils {
             ?: Intent(Settings.ACTION_SETTINGS)
 
     private fun findPowerManagerIntent(context: Context?): Intent? {
-        val manufacturerName = Build.BRAND.lowercase()
-        val possibleIntents = getManufacturerPowerManagerIntents(manufacturerName)
+        val candidates = listOf(
+            Build.MANUFACTURER.orEmpty().lowercase(java.util.Locale.ROOT).trim(),
+            Build.BRAND.orEmpty().lowercase(java.util.Locale.ROOT).trim(),
+        ).distinct().filter { it.isNotEmpty() }
 
-        for (i in possibleIntents.indices) {
-            val possibleIntent = possibleIntents[i]
-            val isAvailableOnDevice: Boolean = IntentUtils.isAvailableOnDevice(context, possibleIntent)
-            if (isAvailableOnDevice) {
-                setPowerManagerIntentCache(possibleIntent)
-                return possibleIntent
+        for (name in candidates) {
+            val possibleIntents = getManufacturerPowerManagerIntents(name)
+            for (i in possibleIntents.indices) {
+                val possibleIntent = possibleIntents[i]
+                val isAvailableOnDevice: Boolean = IntentUtils.isAvailableOnDevice(context, possibleIntent)
+                if (isAvailableOnDevice) {
+                    setPowerManagerIntentCache(possibleIntent)
+                    return possibleIntent
+                }
             }
         }
         return null
@@ -226,7 +231,7 @@ object PowerManagerUtils {
                     ),
                 )
 
-            "redmi", "xiaomi" ->
+            "redmi", "xiaomi", "poco", "blackshark" ->
                 listOf<Intent?>(
                     createIntent(
                         "com.miui.securitycenter",
@@ -251,7 +256,7 @@ object PowerManagerUtils {
                     ),
                 )
 
-            "coloros", "oppo" ->
+            "coloros", "oppo", "realme" ->
                 listOf<Intent?>(
                     createIntent(
                         "com.coloros.safecenter",
@@ -280,7 +285,7 @@ object PowerManagerUtils {
                     ),
                 )
 
-            "vivo" ->
+            "vivo", "iqoo" ->
                 listOf<Intent?>(
                     createIntent(
                         "com.iqoo.secure",
@@ -296,7 +301,7 @@ object PowerManagerUtils {
                     ),
                 )
 
-            "nokia" ->
+            "nokia", "hmd global", "hmd" ->
                 listOf<Intent?>(
                     createIntent(
                         "com.evenwell.powersaving.g3",

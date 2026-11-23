@@ -166,7 +166,6 @@ fun OldSettingsState.toSettings() =
             else -> NumberingSystem.Default
         },
         highlightCurrentPrayer = this.highlightCurrentPrayer,
-        // The legacy single flag drove both home and widgets; seed the new widget-only flag from it.
         highlightCurrentPrayerWidget = this.highlightCurrentPrayer,
         selectedLocale = this.selectedLocale,
         selectedArabicCalendar = if (this.selectedLocale.startsWith("fa")) {
@@ -192,14 +191,6 @@ fun OldSettingsState.toSettings() =
         }.filterIsInstance<AudioEntry.ExternalAudioEntry>(),
         selectedAdhanEntries =
             this.selectedAdhanEntries
-                // Drop per-prayer entries that aren't real overrides; always keep the global
-                // AdhanKey.Default entry. An entry is not a real override when:
-                //  - it carries the legacy "default" id placeholder meaning "follow the global muezzin"
-                //    (migrating it would let mapAdhanIdToEntry coerce it into a concrete override the
-                //    user never set), or
-                //  - it duplicates the global selection. Dropping it lets a later change to the default
-                //    muezzin apply to this prayer too, avoiding the UX surprise of a per-prayer adhan
-                //    silently pinned to the old default after the user switches muezzin.
                 .filter { (key, value) ->
                     key == AdhanKey.Default ||
                         (!value.isUnsetPlaceholder() && value.id != this.selectedAdhanEntries[AdhanKey.Default]?.id)
@@ -236,15 +227,13 @@ fun OldSettingsState.toSettings() =
         hijriMonthlyView = this.hijriMonthlyView,
     )
 
-fun OldThemeColors.toThemeColors() =
+fun OldThemeColors.toThemeColors(): ThemeColor =
     when (this) {
-        OldThemeColors.Default -> ThemeColor.Default
+        OldThemeColors.Default -> ThemeColor.Dark
         OldThemeColors.Light -> ThemeColor.ClassicLight
-        OldThemeColors.Dark -> ThemeColor.ClassicDark
+        OldThemeColors.Dark -> ThemeColor.Dark
     }
 
-/** Legacy id used by the old app's per-prayer picker to mean "use the default muezzin" — a placeholder,
- *  not a concrete selection. */
 private const val LEGACY_UNSET_ADHAN_ID = "default"
 
 fun OldAdhanAudioEntry.isUnsetPlaceholder(): Boolean =
@@ -256,7 +245,7 @@ fun OldAdhanAudioEntry.isUnsetPlaceholder(): Boolean =
 fun OldAdhanAudioEntry.toAdhanAudioEntry(): AudioEntry =
     when (this) {
         is OldAdhanAudioEntry.OldResourceAdhanAudioEntry -> {
-            return mapAdhanIdToEntry(this.id)
+            mapAdhanIdToEntry(this.id)
         }
 
         is OldAdhanAudioEntry.OldExternalAdhanAudioEntry -> {

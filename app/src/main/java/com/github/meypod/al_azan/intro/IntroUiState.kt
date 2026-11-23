@@ -3,11 +3,16 @@ package com.github.meypod.al_azan.intro
 import androidx.compose.runtime.Immutable
 import com.github.meypod.al_azan.core.presentation.navigation.Route
 
+/**
+ * The four Minimal Zen onboarding screens, in order:
+ *  1. Welcome & language (+ restore a backup),
+ *  2. Location and astronomical calculation method together,
+ *  3. Default Muezzin voice & Smart Spiritual Capsule,
+ *  4. Readiness Shield & device-specific permissions / battery protection.
+ */
 private val introSteps = listOf(
     Route.Intro.LanguageSelection,
-    Route.Intro.RestoreBackup,
     Route.Intro.Location,
-    Route.Intro.Calculation,
     Route.Intro.Adhan,
     Route.Intro.Troubleshoot,
 )
@@ -20,6 +25,9 @@ data class IntroUiState(
     val showSkipDialog: Boolean = false,
     val appIntroDone: Boolean = false,
 ) {
+    val totalSteps: Int
+        get() = introSteps.size
+
     val step: Int
         get() {
             val indexOf = introSteps.indexOf(route)

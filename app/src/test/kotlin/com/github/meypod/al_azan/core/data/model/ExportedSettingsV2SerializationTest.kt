@@ -20,7 +20,7 @@ class ExportedSettingsV2SerializationTest {
 
     private fun sample() =
         ExportedSettingsV2(
-            settings = Settings(selectedLocale = "fa", themeColor = ThemeColor.ClassicDark, is24HourFormat = false),
+            settings = Settings(selectedLocale = "fa", themeColor = ThemeColor.Dark, is24HourFormat = false),
             calculationSettings = CalculationSettings(locationId = "default"),
             alarmSettings = AlarmSettings(preAlarmMinutesBefore = 42),
             counters = listOf(Counter(id = "fajr", count = 3, lastCount = 5)),

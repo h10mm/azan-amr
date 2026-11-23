@@ -28,6 +28,30 @@ fun AdvancedTroubleshootScreen(
     onAction: (AdvancedTroubleshootUiAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    ScreenScaffold(
+        title = stringResource(R.string.advanced_title),
+        onBackClick = { NavigationController.navigateBack() },
+        modifier = modifier,
+    ) {
+        DifferentAlarmTypeCard(uiState = uiState, onAction = onAction)
+    }
+}
+
+/**
+ * The "use a different alarm type" switch (hides the system alarm icon / avoids Adaptive Charging
+ * interference on e.g. Google Pixel). Shared by the Advanced troubleshoot screen and the last onboarding
+ * step so both behave identically, including the notification-permission requirement below.
+ *
+ * [title] / [help] let a caller word the header for its audience; the defaults are the Advanced screen's.
+ */
+@Composable
+fun DifferentAlarmTypeCard(
+    uiState: AdvancedTroubleshootUiState,
+    onAction: (AdvancedTroubleshootUiAction) -> Unit,
+    modifier: Modifier = Modifier,
+    title: String = stringResource(R.string.adaptive_charging),
+    help: String = stringResource(R.string.adaptive_charging_help),
+) {
     // The "different alarm type" (ExactAllowWhileIdle) gets no background-activity-launch exemption, so the
     // full-screen alarm can only appear via the notification's full-screen-intent — which the OS suppresses
     // when notifications are denied, leaving the adhan unstoppable. Require notifications when enabling it,
@@ -39,44 +63,38 @@ fun AdvancedTroubleshootScreen(
             if (!results.requiredAllGranted()) onAction(AdvancedTroubleshootUiAction.OnAdaptiveChargingToggle(false))
         },
     )
-    ScreenScaffold(
-        title = stringResource(R.string.advanced_title),
-        onBackClick = { NavigationController.navigateBack() },
-        modifier = modifier,
-    ) {
-        ACard { cardPadding ->
-            Column(
-                Modifier.padding(cardPadding),
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-            ) {
-                SettingHeader(stringResource(R.string.adaptive_charging), stringResource(R.string.adaptive_charging_help))
+    ACard(modifier) { cardPadding ->
+        Column(
+            Modifier.padding(cardPadding),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
+        ) {
+            SettingHeader(title, help)
 
-                InformationRow(
-                    Modifier.fillMaxWidth(),
-                    iconDescription = null,
-                ) {
-                    Text(stringResource(R.string.adaptive_charging_caution))
-                }
-                SettingSwitch(
-                    title = stringResource(R.string.different_alarm_enable),
-                    subtitle = null,
-                    checked = uiState.useDifferentAlarmType,
-                    onCheckedChange = { enabled ->
-                        onAction(AdvancedTroubleshootUiAction.OnAdaptiveChargingToggle(enabled))
-                        if (enabled) {
-                            requestNotifications(
-                                listOf(
-                                    PermissionStep(
-                                        SchedulingPermission.Notification,
-                                        R.string.different_alarm_notification_rationale,
-                                        R.string.adhan_notification_permission_denied_text,
-                                    ),
-                                ),
-                            )
-                        }
-                    },
-                )
+            InformationRow(
+                Modifier.fillMaxWidth(),
+                iconDescription = null,
+            ) {
+                Text(stringResource(R.string.adaptive_charging_caution))
             }
+            SettingSwitch(
+                title = stringResource(R.string.different_alarm_enable),
+                subtitle = null,
+                checked = uiState.useDifferentAlarmType,
+                onCheckedChange = { enabled ->
+                    onAction(AdvancedTroubleshootUiAction.OnAdaptiveChargingToggle(enabled))
+                    if (enabled) {
+                        requestNotifications(
+                            listOf(
+                                PermissionStep(
+                                    SchedulingPermission.Notification,
+                                    R.string.different_alarm_notification_rationale,
+                                    R.string.adhan_notification_permission_denied_text,
+                                ),
+                            ),
+                        )
+                    }
+                },
+            )
         }
     }
 }

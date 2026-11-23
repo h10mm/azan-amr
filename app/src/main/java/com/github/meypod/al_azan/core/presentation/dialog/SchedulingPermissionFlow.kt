@@ -154,11 +154,6 @@ object SchedulingPermissionSteps {
             R.string.adhan_notification_permission_denied_text,
         ),
         PermissionStep(
-            SchedulingPermission.PhoneState,
-            R.string.adhan_phone_state_permission_rationale,
-            R.string.adhan_phone_state_permission_denied_text,
-        ),
-        PermissionStep(
             SchedulingPermission.ExactAlarm,
             R.string.adhan_exact_alarm_permission_rationale,
             R.string.adhan_exact_alarm_permission_denied_text,
@@ -175,11 +170,6 @@ object SchedulingPermissionSteps {
             SchedulingPermission.Notification,
             R.string.reminder_notification_permission_rationale,
             R.string.reminder_notification_permission_denied_text,
-        ),
-        PermissionStep(
-            SchedulingPermission.PhoneState,
-            R.string.reminder_phone_state_permission_rationale,
-            R.string.reminder_phone_state_permission_denied_text,
         ),
         PermissionStep(
             SchedulingPermission.ExactAlarm,

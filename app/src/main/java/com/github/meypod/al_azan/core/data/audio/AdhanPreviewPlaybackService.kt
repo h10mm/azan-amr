@@ -45,6 +45,7 @@ class AdhanPreviewPlaybackService :
 
     companion object {
         private const val ACTION_PLAY = "com.github.meypod.al_azan.action.PREVIEW_PLAY"
+        private const val ACTION_PLAY_ADHAN = "com.github.meypod.al_azan.action.ADHAN_ALARM_PLAY"
         private const val ACTION_STOP = "com.github.meypod.al_azan.action.PREVIEW_STOP"
         private const val ACTION_SET_VOLUME = "com.github.meypod.al_azan.action.PREVIEW_SET_VOLUME"
         private const val EXTRA_URI = "uri"
@@ -52,14 +53,103 @@ class AdhanPreviewPlaybackService :
         private const val EXTRA_LABEL = "label"
         private const val EXTRA_LOOP = "loop"
         private const val EXTRA_VOLUME_PERCENT = "volume_percent"
+        private const val EXTRA_NOTIFICATION_ID = "notification_id"
 
         private const val CHANNEL_ID = "adhan_preview_playback"
         private const val NOTIFICATION_ID = 0xADA1
+
+        @Volatile
+        private var fallbackPlayer: MediaPlayer? = null
+
+        @Volatile
+        private var fallbackWakeLock: PowerManager.WakeLock? = null
 
         private val _playingId = MutableStateFlow<String?>(null)
 
         /** Emits the id of the entry currently previewing, or null when idle. Process-global. */
         val playingId: StateFlow<String?> = _playingId.asStateFlow()
+
+        fun playAdhanAlarm(
+            context: Context,
+            uri: Uri,
+            volumePercent: Int = -1,
+        ) {
+            val appCtx = context.applicationContext
+            val intent = Intent(appCtx, AdhanPreviewPlaybackService::class.java).apply {
+                action = ACTION_PLAY_ADHAN
+                putExtra(EXTRA_URI, uri.toString())
+                putExtra(EXTRA_VOLUME_PERCENT, volumePercent)
+            }
+            val startedService = runCatching {
+                appCtx.startService(intent)
+            }.isSuccess
+            if (!startedService) {
+                playAdhanAlarmInProcess(appCtx, uri, volumePercent)
+            }
+        }
+
+        private fun playAdhanAlarmInProcess(
+            appCtx: Context,
+            uri: Uri,
+            volumePercent: Int,
+        ) {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                runCatching {
+                    fallbackPlayer?.let {
+                        runCatching { it.reset() }
+                        runCatching { it.release() }
+                    }
+                    fallbackPlayer = null
+                    fallbackWakeLock?.let { if (it.isHeld) runCatching { it.release() } }
+                    val pm = appCtx.getSystemService<PowerManager>()
+                    fallbackWakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "al_azan:adhan_fallback_wakelock")?.apply {
+                        setReferenceCounted(false)
+                        runCatching { acquire(5 * 60 * 1000L) }
+                    }
+                    val am = appCtx.getSystemService<AudioManager>()
+                    val savedVol = if (volumePercent in 0..100 && am != null) {
+                        val cur = runCatching { am.getStreamVolume(AudioManager.STREAM_ALARM) }.getOrDefault(-1)
+                        val max = runCatching { am.getStreamMaxVolume(AudioManager.STREAM_ALARM) }.getOrDefault(0)
+                        if (max > 0) {
+                            runCatching { am.setStreamVolume(AudioManager.STREAM_ALARM, (volumePercent * max + 50) / 100, 0) }
+                        }
+                        cur
+                    } else {
+                        -1
+                    }
+                    val cleanupFallback = {
+                        if (savedVol >= 0 && am != null) {
+                            runCatching { am.setStreamVolume(AudioManager.STREAM_ALARM, savedVol, 0) }
+                        }
+                        fallbackPlayer?.let {
+                            runCatching { it.reset() }
+                            runCatching { it.release() }
+                        }
+                        fallbackPlayer = null
+                        fallbackWakeLock?.let { if (it.isHeld) runCatching { it.release() } }
+                        fallbackWakeLock = null
+                    }
+                    fallbackPlayer = MediaPlayer().apply {
+                        setWakeMode(appCtx, PowerManager.PARTIAL_WAKE_LOCK)
+                        setAudioAttributes(
+                            AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_ALARM)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                .build(),
+                        )
+                        setOnPreparedListener { mp -> runCatching { mp.start() } }
+                        setOnCompletionListener { cleanupFallback() }
+                        setOnErrorListener { _, _, _ ->
+                            cleanupFallback()
+                            true
+                        }
+                        isLooping = false
+                        setDataSource(appCtx, uri)
+                        prepareAsync()
+                    }
+                }
+            }
+        }
 
         fun play(
             context: Context,
@@ -103,6 +193,10 @@ class AdhanPreviewPlaybackService :
 
     private var player: MediaPlayer? = null
     private var focusRequest: AudioFocusRequest? = null
+    private var volumeKeyMonitor: VolumeKeyDismissMonitor? = null
+    private var adhanWakeLock: PowerManager.WakeLock? = null
+    private var isAdhanAlarm: Boolean = false
+    private var activeNotificationId: Int = NOTIFICATION_ID
 
     // 0..100 sets the media stream volume absolutely (matching how the alarm playback applies the
     // custom volume); -1 leaves the device volume untouched. Applied on prepare and on
@@ -126,6 +220,16 @@ class AdhanPreviewPlaybackService :
         startId: Int,
     ): Int {
         when (intent?.action) {
+            ACTION_PLAY_ADHAN -> {
+                val uri = intent.getStringExtra(EXTRA_URI)?.toUri()
+                volumePercent = intent.getIntExtra(EXTRA_VOLUME_PERCENT, -1)
+                if (uri != null) {
+                    startAdhanAlarmPlayback(uri)
+                } else {
+                    cleanupAndStop(cancelNotification = false)
+                }
+            }
+
             ACTION_PLAY -> {
                 val uri = intent.getStringExtra(EXTRA_URI)?.toUri()
                 val id = intent.getStringExtra(EXTRA_ID)
@@ -135,7 +239,7 @@ class AdhanPreviewPlaybackService :
                 if (uri != null && id != null) {
                     startPlayback(uri, id, label, loop)
                 } else {
-                    cleanupAndStop()
+                    cleanupAndStop(cancelNotification = true)
                 }
             }
 
@@ -143,10 +247,10 @@ class AdhanPreviewPlaybackService :
                 volumePercent = intent.getIntExtra(EXTRA_VOLUME_PERCENT, -1)
                 // A set-volume racing a finished preview starts the service with no player; stop again
                 // instead of lingering as a started-but-idle service.
-                if (player != null) applyStreamVolume() else cleanupAndStop()
+                if (player != null) applyStreamVolume() else cleanupAndStop(cancelNotification = true)
             }
 
-            else -> cleanupAndStop()
+            else -> cleanupAndStop(cancelNotification = true)
         }
         return START_NOT_STICKY
     }
@@ -158,18 +262,65 @@ class AdhanPreviewPlaybackService :
     private fun applyStreamVolume() {
         if (volumePercent !in 0..100) return
         val am = audioManager ?: return
+        val stream = if (isAdhanAlarm) AudioManager.STREAM_ALARM else AudioManager.STREAM_MUSIC
         if (savedStreamVolume == -1) {
-            savedStreamVolume = runCatching { am.getStreamVolume(AudioManager.STREAM_MUSIC) }.getOrDefault(-1)
+            savedStreamVolume = runCatching { am.getStreamVolume(stream) }.getOrDefault(-1)
         }
-        val max = runCatching { am.getStreamMaxVolume(AudioManager.STREAM_MUSIC) }.getOrDefault(0)
+        val max = runCatching { am.getStreamMaxVolume(stream) }.getOrDefault(0)
         if (max <= 0) return
-        runCatching { am.setStreamVolume(AudioManager.STREAM_MUSIC, (volumePercent * max + 50) / 100, 0) }
+        runCatching { am.setStreamVolume(stream, (volumePercent * max + 50) / 100, 0) }
     }
 
     private fun restoreStreamVolume() {
         if (savedStreamVolume < 0) return
-        runCatching { audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, savedStreamVolume, 0) }
+        val stream = if (isAdhanAlarm) AudioManager.STREAM_ALARM else AudioManager.STREAM_MUSIC
+        runCatching { audioManager?.setStreamVolume(stream, savedStreamVolume, 0) }
         savedStreamVolume = -1
+    }
+
+    private fun startAdhanAlarmPlayback(
+        uri: Uri,
+    ) {
+        isAdhanAlarm = true
+
+        if (isCallActive()) {
+            cleanupAndStop(cancelNotification = false)
+            return
+        }
+        registerCallStateListener()
+
+        adhanWakeLock?.let { if (it.isHeld) runCatching { it.release() } }
+        val pm = getSystemService<PowerManager>()
+        adhanWakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "al_azan:adhan_playback")?.apply {
+            setReferenceCounted(false)
+            runCatching { acquire(5 * 60 * 1000L) }
+        }
+
+        volumeKeyMonitor?.stop()
+        volumeKeyMonitor = null
+
+        player?.release()
+        player = MediaPlayer().apply {
+            setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build(),
+            )
+            setOnPreparedListener(this@AdhanPreviewPlaybackService)
+            setOnCompletionListener(this@AdhanPreviewPlaybackService)
+            setOnErrorListener(this@AdhanPreviewPlaybackService)
+            isLooping = false
+            val ok = runCatching {
+                setDataSource(applicationContext, uri)
+                prepareAsync()
+            }.isSuccess
+            if (!ok) {
+                cleanupAndStop(cancelNotification = false)
+                return
+            }
+        }
     }
 
     private fun startPlayback(
@@ -178,15 +329,17 @@ class AdhanPreviewPlaybackService :
         label: String,
         loop: Boolean,
     ) {
+        isAdhanAlarm = false
+        activeNotificationId = NOTIFICATION_ID
         // Must call startForeground promptly after startForegroundService.
         startForeground(NOTIFICATION_ID, buildNotification(label))
 
         if (isCallActive()) {
-            cleanupAndStop()
+            cleanupAndStop(cancelNotification = true)
             return
         }
         if (!requestAudioFocus()) {
-            cleanupAndStop()
+            cleanupAndStop(cancelNotification = true)
             return
         }
         registerCallStateListener()
@@ -209,7 +362,7 @@ class AdhanPreviewPlaybackService :
                 prepareAsync()
             }.isSuccess
             if (!ok) {
-                cleanupAndStop()
+                cleanupAndStop(cancelNotification = true)
                 return
             }
         }
@@ -221,20 +374,21 @@ class AdhanPreviewPlaybackService :
         runCatching { mp.start() }
     }
 
-    override fun onCompletion(mp: MediaPlayer) = cleanupAndStop()
+    override fun onCompletion(mp: MediaPlayer) = cleanupAndStop(cancelNotification = !isAdhanAlarm)
 
     override fun onError(
         mp: MediaPlayer,
         what: Int,
         extra: Int,
     ): Boolean {
-        cleanupAndStop()
+        cleanupAndStop(cancelNotification = !isAdhanAlarm)
         return true
     }
 
     override fun onAudioFocusChange(focusChange: Int) {
-        // Any loss (transient or permanent, e.g. an incoming call grabbing focus) stops the preview.
-        if (focusChange <= 0) cleanupAndStop()
+        // Only stop in-app previews on audio focus loss; real Adhan alarms play on USAGE_ALARM and
+        // must not be cut off by transient notifications or touch sounds.
+        if (!isAdhanAlarm && focusChange <= 0) cleanupAndStop(cancelNotification = true)
     }
 
     private fun requestAudioFocus(): Boolean {
@@ -311,7 +465,7 @@ class AdhanPreviewPlaybackService :
     }
 
     private fun onCallState(state: Int) {
-        if (state != TelephonyManager.CALL_STATE_IDLE) cleanupAndStop()
+        if (state != TelephonyManager.CALL_STATE_IDLE) cleanupAndStop(cancelNotification = false)
     }
 
     private fun buildNotification(label: String): android.app.Notification {
@@ -349,23 +503,34 @@ class AdhanPreviewPlaybackService :
         NotificationManagerCompat.from(this).createNotificationChannel(channel)
     }
 
-    private fun cleanupAndStop() {
+    private fun cleanupAndStop(cancelNotification: Boolean = true) {
+        volumeKeyMonitor?.stop()
+        volumeKeyMonitor = null
         player?.let { mp ->
             runCatching { mp.reset() }
-            mp.release()
+            runCatching { mp.release() }
         }
         player = null
+        adhanWakeLock?.let { if (it.isHeld) runCatching { it.release() } }
+        adhanWakeLock = null
         // Before abandoning focus so whatever resumes after us hears the restored level.
         restoreStreamVolume()
         abandonAudioFocus()
         unregisterCallStateListener()
         _playingId.value = null
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        if (!isAdhanAlarm) {
+            if (cancelNotification) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                NotificationManagerCompat.from(this).cancel(activeNotificationId)
+            } else {
+                stopForeground(STOP_FOREGROUND_DETACH)
+            }
+        }
         stopSelf()
     }
 
     override fun onDestroy() {
-        cleanupAndStop()
+        cleanupAndStop(cancelNotification = false)
         super.onDestroy()
     }
 }

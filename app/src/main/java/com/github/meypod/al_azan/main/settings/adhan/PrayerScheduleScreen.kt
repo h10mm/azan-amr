@@ -24,6 +24,7 @@ import com.github.meypod.al_azan.core.domain.model.alarm.VibrationMode
 import com.github.meypod.al_azan.core.domain.model.settings.AudioEntry
 import com.github.meypod.al_azan.core.domain.model.settings.NOTIFICATION_AUDIO_ID
 import com.github.meypod.al_azan.core.domain.model.settings.SILENT_AUDIO_ID
+import com.github.meypod.al_azan.core.domain.model.settings.getDefaultAdhanEntries
 import com.github.meypod.al_azan.core.domain.model.settings.isResolvable
 import com.github.meypod.al_azan.core.domain.model.settings.mapAdhanIdToEntry
 import com.github.meypod.al_azan.core.domain.util.resolvedFirstDayOfWeek
@@ -74,7 +75,10 @@ fun PrayerScheduleScreen(
             null,
             listOf<AudioEntry?>(null, mapAdhanIdToEntry(NOTIFICATION_AUDIO_ID), mapAdhanIdToEntry(SILENT_AUDIO_ID)),
         ),
-        AudioPickerSection(stringResource(R.string.muezzin), uiState.settings.savedAdhanAudioEntries),
+        AudioPickerSection(
+            stringResource(R.string.muezzin),
+            (getDefaultAdhanEntries() + uiState.settings.savedAdhanAudioEntries).distinctBy { it.id },
+        ),
         AudioPickerSection(stringResource(R.string.your_sounds), uiState.settings.savedUserAudioEntries),
         AudioPickerSection(stringResource(R.string.device_sounds), uiState.deviceSounds),
     )

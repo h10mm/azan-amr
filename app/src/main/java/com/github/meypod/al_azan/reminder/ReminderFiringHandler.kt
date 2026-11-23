@@ -14,6 +14,7 @@ import com.github.meypod.al_azan.core.domain.model.alarm.AlarmSettings
 import com.github.meypod.al_azan.core.domain.model.alarm.SkippedAlarm
 import com.github.meypod.al_azan.core.domain.model.alarm.VibrationMode
 import com.github.meypod.al_azan.core.domain.model.alarm.upsert
+import com.github.meypod.al_azan.core.domain.model.navigation.DeepLinkableRoute
 import com.github.meypod.al_azan.core.domain.model.notification.AndroidNotificationCategory
 import com.github.meypod.al_azan.core.domain.model.notification.AndroidNotificationConfig
 import com.github.meypod.al_azan.core.domain.model.notification.NotificationButton
@@ -129,6 +130,8 @@ class ReminderFiringHandler @Inject constructor(
         // Mark delivered so the reschedule targets the *next* occurrence, not this one again.
         settingsRepository.markDelivered(ReminderContract.notificationId(reminderId), timestamp)
         notificationRepository.cancelNotification(ReminderContract.preNotificationId(reminderId))
+        notificationRepository.cancelNotification("spiritual_pill_companion_v2")
+        notificationRepository.cancelNotification("spiritual_pill_companion_notification")
         val reminder = reminderRepository.data.first().firstOrNull { it.id == reminderId }
         if (reminder == null || !reminder.enabled) {
             reminderScheduler.schedule()
@@ -139,6 +142,7 @@ class ReminderFiringHandler @Inject constructor(
 
         val title = reminder.displayName(localizedResources.current)
         val timeLabel = settings.formatTime(timestamp)
+        val reminderBody = resolveReminderBody(reminderId, title, timeLabel)
         // The adhan "Dismiss & silent" window suppresses reminders too: post a silent missed notice
         // instead of sounding, so the user still sees it passed.
         val silencedUntil = settings.silencedUntilMillis ?: 0L
@@ -167,7 +171,7 @@ class ReminderFiringHandler @Inject constructor(
                             settings = settings,
                             alarmSettings = alarmSettings,
                             title = title,
-                            body = null,
+                            body = reminderBody,
                             timeLabel = timeLabel,
                             soundUri = soundUri,
                             channelId = reminderChannel(settings),
@@ -188,7 +192,7 @@ class ReminderFiringHandler @Inject constructor(
                     reminderId,
                     title,
                     timeLabel,
-                    null,
+                    reminderBody,
                     settings,
                     timeoutMillis = alarmSettings.autoDismissNotificationMillis,
                     stoppableSound = soundUri != null,
@@ -225,6 +229,8 @@ class ReminderFiringHandler @Inject constructor(
         if (!reminder.enabled) return
         // Mark this occurrence's upcoming notice delivered so reschedules don't re-post it
         settingsRepository.markDelivered(ReminderContract.preNotificationId(reminderId), timestamp)
+        notificationRepository.cancelNotification("spiritual_pill_companion_v2")
+        notificationRepository.cancelNotification("spiritual_pill_companion_notification")
         postUpcomingNotification(reminderId, reminder, timestamp)
     }
 
@@ -306,6 +312,25 @@ class ReminderFiringHandler @Inject constructor(
         )
     }
 
+    private fun resolveReminderBody(reminderId: String, title: String, timeLabel: String): String =
+        when {
+            reminderId.contains("kahf", ignoreCase = true) || title.contains("الكهف") ->
+                "«مَنْ قَرَأَ سُورَةَ الْكَهْفِ فِي يَوْمِ الْجُمُعَةِ أَضَاءَ لَهُ مِنَ النُّورِ مَا بَيْنَ الْجُمُعَتَيْنِ»"
+            reminderId.contains("mulk", ignoreCase = true) || title.contains("الملك") ->
+                "«سُورَةُ تَبَارَكَ هِيَ الْمَانِعَةُ مِنْ عَذَابِ الْقَبْرِ» • اقرأها قبل النوم"
+            reminderId.contains("azkar", ignoreCase = true) || title.contains("أذكار") ->
+                "«أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ» • حَصِّنْ نَفْسَكَ وَيَوْمَكَ بِالذِّكْرِ"
+            reminderId.contains("qiyam", ignoreCase = true) || title.contains("قيام") || title.contains("وتر") ->
+                "«أَفْضَلُ الصَّلَاةِ بَعْدَ الْفَرِيضَةِ صَلَاةُ اللَّيْلِ» • رَكْعَةُ وِتْرٍ تُضِيءُ لَيْلَتَكَ"
+            reminderId.contains("duha", ignoreCase = true) || title.contains("الضحى") ->
+                "«يُصْبِحُ عَلَى كُلِّ سُلَامَى مِنْ أَحَدِكُمْ صَدَقَةٌ... وَيُجْزِئُ مِنْ ذَلِكَ رَكْعَتَانِ يَرْكَعُهُمَا مِنَ الضُّحَى»"
+            reminderId.contains("istijabah", ignoreCase = true) || title.contains("إجابة") ->
+                "«إِنَّ فِي الْجُمُعَةِ لَسَاعَةً لَا يُوَافِقُهَا عَبْدٌ مُسْلِمٌ يَسْأَلُ اللَّهَ شَيْئًا إِلَّا أَعْطَاهُ إِيَّاهُ»"
+            reminderId.contains("fasting", ignoreCase = true) || title.contains("صيام") ->
+                "«تُعْرَضُ الْأَعْمَالُ يَوْمَ الِاثْنَيْنِ وَالْخَمِيسِ فَأُحِبُّ أَنْ يُعْرَضَ عَمَلِي وَأَنَا صَائِمٌ»"
+            else -> "تنبيه مبارك: $title • $timeLabel"
+        }
+
     /**
      * The plain reminder notification, used both for a soft sound and for the sound-less cases (silent
      * sound, or a live call). [stoppableSound] makes swiping the notification away stop the sound — set
@@ -322,6 +347,58 @@ class ReminderFiringHandler @Inject constructor(
         stoppableSound: Boolean = false,
     ) {
         val notificationId = ReminderContract.notificationId(reminderId)
+        com.github.meypod.al_azan.widget.SpiritualPillDismissStore.markDismissedForReminder(context, reminderId, title)
+        val actions = mutableListOf<NotificationButton>()
+        val pressRoute: DeepLinkableRoute = when {
+            reminderId.contains("kahf", ignoreCase = true) || title.contains("الكهف") -> {
+                actions.add(
+                    NotificationButton(
+                        title = TextResource.Literal("📖 قراءة السورة"),
+                        pressAction = NotificationPressAction.Route(Route.Main.QuranKahf),
+                    ),
+                )
+                Route.Main.QuranKahf
+            }
+            reminderId.contains("mulk", ignoreCase = true) || title.contains("الملك") -> {
+                actions.add(
+                    NotificationButton(
+                        title = TextResource.Literal("📖 قراءة السورة"),
+                        pressAction = NotificationPressAction.Route(Route.Main.QuranMulk),
+                    ),
+                )
+                Route.Main.QuranMulk
+            }
+            reminderId.contains("azkar", ignoreCase = true) || title.contains("أذكار") -> {
+                val azkarRoute = com.github.meypod.al_azan.widget.SpiritualPillDismissStore.resolveAzkarRoute(reminderId, title, body.orEmpty())
+                actions.add(
+                    NotificationButton(
+                        title = TextResource.Literal("📿 فتح الأذكار"),
+                        pressAction = NotificationPressAction.Route(azkarRoute),
+                    ),
+                )
+                azkarRoute
+            }
+            reminderId.contains("qiyam", ignoreCase = true) || title.contains("قيام") || title.contains("وتر") -> {
+                actions.add(
+                    NotificationButton(
+                        title = TextResource.Literal("🌙 صلوات النوافل"),
+                        pressAction = NotificationPressAction.Route(Route.Main.Reminder),
+                    ),
+                )
+                Route.Main.Reminder
+            }
+            reminderId.contains("duha", ignoreCase = true) || title.contains("الضحى") -> {
+                actions.add(
+                    NotificationButton(
+                        title = TextResource.Literal("☀️ صلاة الضحى"),
+                        pressAction = NotificationPressAction.Route(Route.Main.Reminder),
+                    ),
+                )
+                Route.Main.Reminder
+            }
+            else -> Route.Main.Reminder
+        }
+
         notificationRepository.notify(
             NotificationConfig(
                 id = notificationId,
@@ -333,6 +410,8 @@ class ReminderFiringHandler @Inject constructor(
                     category = AndroidNotificationCategory.CATEGORY_ALARM,
                     autoCancel = true,
                     showTimestamp = false,
+                    pressAction = NotificationPressAction.Route(pressRoute),
+                    actions = actions.ifEmpty { null },
                     dismissAction = SoftSoundContract.stopAction(notificationId).takeIf { stoppableSound },
                     timeoutAfterMillis = timeoutMillis,
                 ),

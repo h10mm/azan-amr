@@ -4,16 +4,24 @@
     android:id="@+id/countdown_wrapper"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="4dp"
+    android:layout_marginTop="8dp"
+    android:background="@drawable/widget_countdown_capsule"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
     android:gravity="center"
     android:orientation="horizontal"
     android:layoutDirection="ltr">
 
     <TextView
         android:id="@+id/countdown_label"
-        style="@style/PrayerLabels"
+        style="@style/PrayerLabelsActive"
         tools:ignore="HardcodedText"
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textStyle="bold"
         android:text="Prayer: "
         android:textDirection="ltr" />
 
@@ -21,6 +29,16 @@
         android:id="@+id/countdown"
         style="@style/PrayerLabels"
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/widget_chronometer_pill"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/widget_chronometer_color"
         android:countDown="true"
         android:enabled="false"
         android:fontFamily="monospace"/>

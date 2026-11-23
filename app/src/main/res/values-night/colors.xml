@@ -4,16 +4,35 @@
          notification shade follows the system theme and turns dark on Android 10+ (API 29), where
          RemoteViews resolve this values-night qualifier against SystemUI's config. Near-black notif
          text was unreadable there. (API 31+ adaptive layouts handle this via system attrs instead.) -->
-    <color name="bg_compat">#DE474747</color>
-    <color name="active_prayer">#fde047</color>
+    <color name="bg_compat">#EB111827</color>
+    <color name="active_prayer">#34D399</color>
     <color name="secondary_text_color">#ffffffff</color>
-    <color name="notif_active_prayer">#fde047</color>
+    <color name="notif_active_prayer">#34D399</color>
     <color name="notif_secondary_text_color">#ffffffff</color>
 
+    <!-- Modern Widget Colors (Dark Mode) -->
+    <color name="widget_table_surface_bg">#EB111827</color>
+    <color name="widget_table_border">#22FFFFFF</color>
+    <color name="widget_slot_normal_bg">#0DFFFFFF</color>
+    <color name="widget_slot_normal_stroke">#15FFFFFF</color>
+    <color name="widget_slot_active_bg">#3010B981</color>
+    <color name="widget_slot_active_stroke">#34D399</color>
+    <color name="widget_countdown_bg">#1810B981</color>
+    <color name="widget_countdown_stroke">#3010B981</color>
+    <color name="widget_chronometer_color">#FACC15</color>
+
     <!-- Custom widget theme-adaptive defaults, dark variant. -->
-    <color name="custom_widget_bg">#FF1C2020</color>
-    <color name="custom_widget_text">#FFDFE3E3</color>
+    <color name="custom_widget_bg">#FF000000</color>
+    <color name="custom_widget_text">#FFE1E3E3</color>
     <color name="custom_widget_highlight">#FFFDE047</color>
 
     <color name="checkmark_green">#FF66BB6A</color>
+
+    <!-- Seamless Notification Colors (Dark Mode) - High Contrast & Maximum Legibility -->
+    <color name="notif_seamless_title">#FFFFFFFF</color>
+    <color name="notif_seamless_sub">#FFCBD5E1</color>
+    <color name="notif_seamless_badge_bg">#2510B981</color>
+    <color name="notif_seamless_badge_stroke">#5010B981</color>
+    <color name="notif_seamless_badge_text">#FF34D399</color>
+    <color name="notif_seamless_reminder_text">#FFFBBF24</color>
 </resources>

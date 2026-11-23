@@ -22,4 +22,13 @@ data class NextPrayerWidgetData(
      * on the context's own configuration.
      */
     val locale: String,
+    val prayerTimeText: String = "",
+    val progress: Float = 0.5f,
+    val shape: NextPrayerShape = NextPrayerShape.Circle,
+    val background: NextPrayerBackground = NextPrayerBackground.Transparent,
+    val progressColorHex: Long = 0xFF10B981,
+    val countdownColorHex: Long = 0xFFF59E0B,
+    val prayerNameColorHex: Long = 0xFFFFFFFF,
+    val dialThemeMode: DialThemeMode = DialThemeMode.AmoledDark,
+    val squareThemeMode: SquareThemeMode = SquareThemeMode.AmoledDark,
 )

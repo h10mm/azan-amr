@@ -28,6 +28,7 @@ class TimeChangeReceiver : BroadcastReceiver() {
     ) {
         when (intent?.action) {
             Intent.ACTION_TIMEZONE_CHANGED -> {
+                schedulerReconciler.markManualTimeChange()
                 val newTimezoneId = (
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         intent.getStringExtra(Intent.EXTRA_TIMEZONE)
@@ -41,6 +42,7 @@ class TimeChangeReceiver : BroadcastReceiver() {
             }
 
             Intent.ACTION_TIME_CHANGED -> {
+                schedulerReconciler.markManualTimeChange()
                 onTimeChanged()
                 refreshWidgets(context)
             }
@@ -53,7 +55,7 @@ class TimeChangeReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.Default).launch {
             try {
-                schedulerReconciler.reconcileAll()
+                schedulerReconciler.onSystemTimeChanged()
             } finally {
                 pendingResult.finish()
             }

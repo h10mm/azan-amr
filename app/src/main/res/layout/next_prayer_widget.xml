@@ -4,30 +4,51 @@
     android:id="@+id/next_prayer_widget_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_compat"
+    android:background="@drawable/widget_1x1_bg"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="8dp"
+    android:padding="12dp"
     android:theme="@style/WidgetExpandedBaseTheme">
 
     <TextView
-        android:id="@+id/next_prayer_name"
-        style="@style/PrayerLabels"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:id="@+id/next_prayer_header_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Fajr"
+        android:text="الصلاة القادمة"
+        android:textSize="11sp"
+        android:textColor="#94A3B8"
+        tools:ignore="HardcodedText" />
+
+    <TextView
+        android:id="@+id/next_prayer_name"
+        style="@style/PrayerLabelsActive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:gravity="center"
+        android:text="الفجر"
         android:textStyle="bold"
+        android:textSize="20sp"
         tools:ignore="HardcodedText" />
 
     <Chronometer
         android:id="@+id/next_prayer_countdown"
         style="@style/PrayerLabels"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/widget_chronometer_pill"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
         android:gravity="center"
         android:countDown="true"
         android:enabled="false"
+        android:textColor="@color/widget_chronometer_color"
+        android:textStyle="bold"
+        android:textSize="12sp"
         android:fontFamily="monospace" />
 
 </LinearLayout>

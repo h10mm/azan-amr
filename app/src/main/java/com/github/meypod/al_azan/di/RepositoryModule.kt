@@ -14,6 +14,7 @@ import com.github.meypod.al_azan.core.data.repository.BackupRepositoryImpl
 import com.github.meypod.al_azan.core.data.repository.CalculationSettingsRepositoryImpl
 import com.github.meypod.al_azan.core.data.repository.CounterRepositoryImpl
 import com.github.meypod.al_azan.core.data.repository.CustomWidgetConfigRepositoryImpl
+import com.github.meypod.al_azan.core.data.repository.NateegaWidgetConfigRepositoryImpl
 import com.github.meypod.al_azan.core.data.repository.FavoriteLocationsRepositoryImpl
 import com.github.meypod.al_azan.core.data.repository.GeoInfoRepositoryImpl
 import com.github.meypod.al_azan.core.data.repository.NotificationChannelManagerImpl
@@ -33,6 +34,7 @@ import com.github.meypod.al_azan.core.domain.model.favorite_location.FavoriteLoc
 import com.github.meypod.al_azan.core.domain.model.reminder.Reminder
 import com.github.meypod.al_azan.core.domain.model.settings.Settings
 import com.github.meypod.al_azan.core.domain.model.widget.CustomWidgetConfig
+import com.github.meypod.al_azan.core.domain.model.widget.NateegaWidgetConfig
 import com.github.meypod.al_azan.core.domain.repository.AlarmRepository
 import com.github.meypod.al_azan.core.domain.repository.AlarmSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.AppLocaleManager
@@ -41,6 +43,7 @@ import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepos
 import com.github.meypod.al_azan.core.domain.repository.CompassRepository
 import com.github.meypod.al_azan.core.domain.repository.CounterRepository
 import com.github.meypod.al_azan.core.domain.repository.CustomWidgetConfigRepository
+import com.github.meypod.al_azan.core.domain.repository.NateegaWidgetConfigRepository
 import com.github.meypod.al_azan.core.domain.repository.FavoriteLocationsRepository
 import com.github.meypod.al_azan.core.domain.repository.GeoInfoRepository
 import com.github.meypod.al_azan.core.domain.repository.NotificationChannelManager
@@ -73,6 +76,7 @@ private object StorageKeysV2 {
     const val FAVORITE_LOCATIONS = "FAVORITE_LOCATIONS_STORAGE_V2"
     const val SCHEDULED_ALARMS = "SCHEDULED_ALARMS_V2"
     const val CUSTOM_WIDGET = "CUSTOM_WIDGET_STORAGE_V2"
+    const val NATEEGA_WIDGET = "NATEEGA_WIDGET_STORAGE_V2"
 }
 
 @Module
@@ -85,16 +89,36 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideSettingsDataStore(
+        @ApplicationContext context: Context,
         mmkv: MMKV,
         @Named("storage") storageJson: Json,
-    ): MMKVDataStore<Settings> =
-        MMKVDataStore(
+    ): MMKVDataStore<Settings> {
+        val sysLang = java.util.Locale.getDefault().language.lowercase()
+        val initialLocale = when (sysLang) {
+            "ar", "tr", "fa", "hi", "bn", "bs", "de", "fr", "sw", "ur", "vi", "ko", "zh" -> sysLang
+            "id", "in" -> "in"
+            else -> "en"
+        }
+        val isNightMode = (
+            context.resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK
+            ) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val initialTheme = if (isNightMode) {
+            com.github.meypod.al_azan.core.domain.model.settings.ThemeColor.MidnightBlue
+        } else {
+            com.github.meypod.al_azan.core.domain.model.settings.ThemeColor.ClassicLight
+        }
+        return MMKVDataStore(
             mmkv = mmkv,
             key = StorageKeysV2.SETTINGS,
             serializer = Settings.serializer(),
-            defaultValue = Settings(selectedLocale = "en"),
+            defaultValue = Settings(
+                selectedLocale = initialLocale,
+                themeColor = initialTheme,
+            ),
             json = storageJson,
         )
+    }
 
     @Provides
     @Singleton
@@ -205,6 +229,23 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideNateegaWidgetConfigRepository(
+        mmkv: MMKV,
+        @Named("storage") storageJson: Json,
+    ): NateegaWidgetConfigRepository =
+        NateegaWidgetConfigRepositoryImpl(
+            nateegaWidgetConfigDatastore =
+                MMKVDataStore(
+                    mmkv = mmkv,
+                    key = StorageKeysV2.NATEEGA_WIDGET,
+                    serializer = NateegaWidgetConfig.serializer(),
+                    defaultValue = NateegaWidgetConfig(),
+                    json = storageJson,
+                ),
+        )
+
+    @Provides
+    @Singleton
     fun provideBackupRepository(
         @ApplicationContext context: Context,
         @Named("storage") storageJson: Json,
@@ -297,10 +338,12 @@ object RepositoryModule {
     fun provideNotificationManager(
         @ApplicationContext context: Context,
         localizedResources: LocalizedResources,
+        settingsRepository: SettingsRepository,
     ): NotificationRepository =
         NotificationRepositoryImpl(
             context,
             MainActivity::class.java,
             localizedResources,
+            settingsRepository,
         )
 }

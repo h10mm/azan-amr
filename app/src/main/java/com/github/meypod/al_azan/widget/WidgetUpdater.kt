@@ -9,20 +9,30 @@ import android.widget.RemoteViews
 import com.github.meypod.al_azan.R
 import com.github.meypod.al_azan.core.domain.model.alarm.AlarmType
 import com.github.meypod.al_azan.core.domain.model.alarm.ScheduledAlarm
+import com.github.meypod.al_azan.core.domain.model.navigation.DeepLinkableRoute
 import com.github.meypod.al_azan.core.domain.model.notification.AndroidNotificationCategory
 import com.github.meypod.al_azan.core.domain.model.notification.AndroidNotificationConfig
 import com.github.meypod.al_azan.core.domain.model.notification.NotificationConfig
+import com.github.meypod.al_azan.core.domain.model.notification.NotificationPressAction
+import com.github.meypod.al_azan.core.presentation.navigation.Route
 import com.github.meypod.al_azan.core.domain.model.settings.NotificationWidgetLayout
 import com.github.meypod.al_azan.core.domain.model.widget.CustomWidgetData
+import com.github.meypod.al_azan.core.domain.model.widget.NateegaWidgetData
+import com.github.meypod.al_azan.core.domain.model.widget.NextPrayerShape
 import com.github.meypod.al_azan.core.domain.model.widget.NextPrayerWidgetData
 import com.github.meypod.al_azan.core.domain.model.widget.WidgetData
+import com.github.meypod.al_azan.core.domain.model.widget.SpiritualCapsuleMode
+import com.github.meypod.al_azan.core.domain.model.settings.ThemeColor
+import com.github.meypod.al_azan.core.domain.model.widget.NateegaThemeMode
 import com.github.meypod.al_azan.core.domain.repository.AlarmRepository
 import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.CustomWidgetConfigRepository
 import com.github.meypod.al_azan.core.domain.repository.FavoriteLocationsRepository
+import com.github.meypod.al_azan.core.domain.repository.NateegaWidgetConfigRepository
 import com.github.meypod.al_azan.core.domain.repository.NotificationRepository
 import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
 import com.github.meypod.al_azan.core.domain.usecase.BuildCustomWidgetDataUseCase
+import com.github.meypod.al_azan.core.domain.usecase.BuildNateegaWidgetDataUseCase
 import com.github.meypod.al_azan.core.domain.usecase.BuildNextPrayerWidgetDataUseCase
 import com.github.meypod.al_azan.core.domain.usecase.BuildWidgetDataUseCase
 import com.github.meypod.al_azan.core.domain.usecase.EnsureNotificationChannelsUseCase
@@ -33,6 +43,7 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Recomputes the prayer-times widgets and applies them: redraws the home-screen app widget, posts or
@@ -49,9 +60,11 @@ class WidgetUpdater @Inject constructor(
     private val calculationSettingsRepository: CalculationSettingsRepository,
     private val favoriteLocationsRepository: FavoriteLocationsRepository,
     private val customWidgetConfigRepository: CustomWidgetConfigRepository,
+    private val nateegaWidgetConfigRepository: NateegaWidgetConfigRepository,
     private val buildWidgetDataUseCase: BuildWidgetDataUseCase,
     private val buildNextPrayerWidgetDataUseCase: BuildNextPrayerWidgetDataUseCase,
     private val buildCustomWidgetDataUseCase: BuildCustomWidgetDataUseCase,
+    private val buildNateegaWidgetDataUseCase: BuildNateegaWidgetDataUseCase,
     private val alarmRepository: AlarmRepository,
     private val notificationRepository: NotificationRepository,
 ) {
@@ -74,33 +87,59 @@ class WidgetUpdater @Inject constructor(
             // a stored "on" value (the setting is hidden pre-31, but old data may still carry it).
             val adaptiveSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
-            val screenIds = appWidgetManager.getAppWidgetIds(ComponentName(context, PrayerTimesWidget::class.java))
-            val nextIds = appWidgetManager.getAppWidgetIds(ComponentName(context, NextPrayerWidget::class.java))
-            val customIds = appWidgetManager.getAppWidgetIds(ComponentName(context, CustomWidget::class.java))
+            val nateegaIds = appWidgetManager.getAppWidgetIds(ComponentName(context, NateegaWidget::class.java))
+            val nateegaClassicIds = appWidgetManager.getAppWidgetIds(ComponentName(context, NateegaClassicWidget::class.java))
+            val nateegaAmoledIds = appWidgetManager.getAppWidgetIds(ComponentName(context, NateegaAmoledWidget::class.java))
+            val nateegaMidnightIds = appWidgetManager.getAppWidgetIds(ComponentName(context, NateegaMidnightWidget::class.java))
+            val compactPrayerIds = appWidgetManager.getAppWidgetIds(ComponentName(context, CompactPrayerWidget::class.java))
+            val compactPrayerClassicIds = appWidgetManager.getAppWidgetIds(ComponentName(context, CompactPrayerClassicWidget::class.java))
+            val compactPrayerAmoledIds = appWidgetManager.getAppWidgetIds(ComponentName(context, CompactPrayerAmoledWidget::class.java))
+            val compactPrayerMidnightIds = appWidgetManager.getAppWidgetIds(ComponentName(context, CompactPrayerMidnightWidget::class.java))
+            val circlePrayerIds = appWidgetManager.getAppWidgetIds(ComponentName(context, NextPrayerCircleWidget::class.java))
+            val squarePrayerIds = appWidgetManager.getAppWidgetIds(ComponentName(context, NextPrayerSquareWidget::class.java))
+            val slimBarIds = appWidgetManager.getAppWidgetIds(ComponentName(context, SlimBarWidget::class.java))
+            val mosqueArchIds = appWidgetManager.getAppWidgetIds(ComponentName(context, MosqueArchWidget::class.java))
+            val smartPillIds = appWidgetManager.getAppWidgetIds(ComponentName(context, SmartPillWidget::class.java))
+            val deskCalIds = appWidgetManager.getAppWidgetIds(ComponentName(context, DeskCalendarWidget::class.java))
+            val deskCalSquareIds = appWidgetManager.getAppWidgetIds(ComponentName(context, DeskCalendarSquareWidget::class.java))
 
-            // Compute only the data a live surface actually needs — every build below runs the prayer-time
-            // calculation, so skipping unused ones matters. The ongoing notification always renders from the
-            // table `data` (its Compact/Custom layouts fall back to it), so `data` is needed whenever the
-            // notification is on or a table widget is placed; the next-prayer and custom data are needed only
-            // for their own home widget or their own notification layout.
+            val anyModernPlaced = slimBarIds.isNotEmpty() || mosqueArchIds.isNotEmpty() || smartPillIds.isNotEmpty() ||
+                deskCalIds.isNotEmpty() || deskCalSquareIds.isNotEmpty()
+            val anyCompactPlaced = compactPrayerIds.isNotEmpty() || compactPrayerClassicIds.isNotEmpty() ||
+                compactPrayerAmoledIds.isNotEmpty() || compactPrayerMidnightIds.isNotEmpty()
+            val anyNextPrayerPlaced = circlePrayerIds.isNotEmpty() || squarePrayerIds.isNotEmpty()
+
+            val nateegaConfig = nateegaWidgetConfigRepository.data.first()
+            val showCompanionPill = nateegaConfig.showSpiritualPillNotification
+
+            val anyNateegaPlaced = nateegaIds.isNotEmpty() || nateegaClassicIds.isNotEmpty() ||
+                nateegaAmoledIds.isNotEmpty() || nateegaMidnightIds.isNotEmpty() || anyCompactPlaced || anyModernPlaced ||
+                showCompanionPill
+
+            // Compute only the data a live surface actually needs
             val showNotif = settings.showWidget
             val notifLayout = settings.notificationWidgetLayout
 
-            val data = if (screenIds.isNotEmpty() || showNotif) {
+            val data = if (showNotif) {
                 buildWidgetDataUseCase(now, settings, calcSettings, location)
                     ?.let { if (adaptiveSupported) it else it.copy(adaptiveTheme = false) }
             } else {
                 null
             }
-            val nextData = if (nextIds.isNotEmpty() || (showNotif && notifLayout == NotificationWidgetLayout.Compact)) {
-                buildNextPrayerWidgetDataUseCase(now, settings, calcSettings, location)
+            val nextData = if (anyNextPrayerPlaced || (showNotif && notifLayout == NotificationWidgetLayout.Compact)) {
+                buildNextPrayerWidgetDataUseCase(now, settings, calcSettings, location, nateegaConfig)
                     ?.let { if (adaptiveSupported) it else it.copy(adaptiveTheme = false) }
             } else {
                 null
             }
-            val customData = if (customIds.isNotEmpty() || (showNotif && notifLayout == NotificationWidgetLayout.Custom)) {
+            val customData = if (showNotif && notifLayout == NotificationWidgetLayout.Custom) {
                 val customConfig = customWidgetConfigRepository.data.first()
                 buildCustomWidgetDataUseCase(now, settings, calcSettings, location, customConfig, locations)
+            } else {
+                null
+            }
+            val nateegaData = if (anyNateegaPlaced) {
+                buildNateegaWidgetDataUseCase(now, settings, calcSettings, location, nateegaConfig)
             } else {
                 null
             }
@@ -113,63 +152,232 @@ class WidgetUpdater @Inject constructor(
                 R.string.set_location_hint
             }
 
-            // Prayer-times widget + notification.
+            // Notification widget (Primary Prayer Times).
             WidgetRenderCache.lastData = data
-            if (data == null) {
+            if (data == null || !showNotif) {
                 notificationRepository.cancelNotification(WidgetContract.NOTIFICATION_ID)
-                if (screenIds.isNotEmpty()) {
-                    appWidgetManager.updateAppWidget(screenIds, WidgetRenderer.buildHint(context, configHintRes))
-                }
+                notificationRepository.cancelNotification("prayer_times_widget_notification")
             } else {
-                if (screenIds.isNotEmpty()) {
-                    appWidgetManager.updateAppWidget(screenIds, WidgetRenderer.buildScreenWidget(context, data))
-                }
                 updateNotification(data, nextData, customData)
             }
 
-            // 1x1 next-prayer widget.
-            NextPrayerRenderCache.lastData = nextData
-            if (nextData != null) {
-                if (nextIds.isNotEmpty()) {
-                    appWidgetManager.updateAppWidget(nextIds, WidgetRenderer.buildNextPrayerWidget(context, nextData))
-                }
-            } else if (nextIds.isNotEmpty()) {
-                appWidgetManager.updateAppWidget(nextIds, WidgetRenderer.buildHint(context, configHintRes))
-            }
+            // Companion Notification (Smart Spiritual Capsule - Independent).
+            val capsuleMode = nateegaConfig.spiritualCapsuleMode
+            updateSpiritualPillNotification(nateegaData, showCompanionPill, capsuleMode)
 
-            // User-authored custom widget. Each instance renders at its own current page (for the
-            // multi-location ‹/› pager), so push per id rather than one shared RemoteViews.
-            CustomWidgetRenderCache.lastData = customData
-            if (customData != null) {
-                customIds.forEach { id ->
-                    appWidgetManager.updateAppWidget(
-                        id,
-                        CustomWidgetRenderer.build(context, customData, CustomWidgetPageState.get(id), id),
-                    )
+
+
+
+
+            // Dedicated Circular and Square Next Prayer Dial Widgets
+            NextPrayerRenderCache.lastData = nextData
+            if (circlePrayerIds.isNotEmpty()) {
+                if (nextData != null) {
+                    val circleData = nextData.copy(shape = NextPrayerShape.Circle)
+                    for (id in circlePrayerIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            WidgetRenderer.buildNextPrayerWidget(context, circleData, options)
+                        )
+                    }
+                } else {
+                    appWidgetManager.updateAppWidget(circlePrayerIds, WidgetRenderer.buildHint(context, configHintRes))
                 }
-            } else if (customIds.isNotEmpty()) {
-                // Placed but the app can't compute times: same config hint as the other widgets (its own
-                // styled variant), not the misleading "set up the widget in the builder" hint.
-                val hint = CustomWidgetRenderer.buildConfigHint(context, configHintRes)
-                customIds.forEach { id -> appWidgetManager.updateAppWidget(id, hint) }
+            }
+            if (squarePrayerIds.isNotEmpty()) {
+                if (nextData != null) {
+                    val squareData = nextData.copy(shape = NextPrayerShape.Square)
+                    for (id in squarePrayerIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            WidgetRenderer.buildNextPrayerWidget(context, squareData, options)
+                        )
+                    }
+                } else {
+                    appWidgetManager.updateAppWidget(squarePrayerIds, WidgetRenderer.buildHint(context, configHintRes))
+                }
+            }
+            NateegaWidgetRenderCache.lastData = nateegaData
+            if (nateegaData != null) {
+                if (nateegaIds.isNotEmpty()) {
+                    val nateegaTheme = when (nateegaConfig.themeMode) {
+                        NateegaThemeMode.MatchAppTheme -> settings.themeColor
+                        NateegaThemeMode.ClassicPaper -> ThemeColor.ClassicLight
+                        NateegaThemeMode.Amoled -> ThemeColor.Dark
+                        NateegaThemeMode.MidnightBlue -> ThemeColor.MidnightBlue
+                    }
+                    val dataToRender = nateegaData.copy(themeColor = nateegaTheme)
+                    for (id in nateegaIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            NateegaWidgetRenderer.build(context, dataToRender, options)
+                        )
+                    }
+                }
+                if (nateegaClassicIds.isNotEmpty()) {
+                    val dataToRender = nateegaData.copy(themeColor = ThemeColor.ClassicLight)
+                    for (id in nateegaClassicIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            NateegaWidgetRenderer.build(context, dataToRender, options)
+                        )
+                    }
+                }
+                if (nateegaAmoledIds.isNotEmpty()) {
+                    val dataToRender = nateegaData.copy(themeColor = ThemeColor.Dark)
+                    for (id in nateegaAmoledIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            NateegaWidgetRenderer.build(context, dataToRender, options)
+                        )
+                    }
+                }
+                if (nateegaMidnightIds.isNotEmpty()) {
+                    val dataToRender = nateegaData.copy(themeColor = ThemeColor.MidnightBlue)
+                    for (id in nateegaMidnightIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            NateegaWidgetRenderer.build(context, dataToRender, options)
+                        )
+                    }
+                }
+                if (compactPrayerIds.isNotEmpty()) {
+                    val compactTheme = when (nateegaConfig.compactThemeMode) {
+                        NateegaThemeMode.MatchAppTheme -> settings.themeColor
+                        NateegaThemeMode.ClassicPaper -> ThemeColor.ClassicLight
+                        NateegaThemeMode.Amoled -> ThemeColor.Dark
+                        NateegaThemeMode.MidnightBlue -> ThemeColor.MidnightBlue
+                    }
+                    val dataToRender = nateegaData.copy(themeColor = compactTheme)
+                    for (id in compactPrayerIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            CompactPrayerWidgetRenderer.build(context, dataToRender, options)
+                        )
+                    }
+                }
+                if (compactPrayerClassicIds.isNotEmpty()) {
+                    val dataToRender = nateegaData.copy(themeColor = ThemeColor.ClassicLight)
+                    for (id in compactPrayerClassicIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            CompactPrayerWidgetRenderer.build(context, dataToRender, options)
+                        )
+                    }
+                }
+                if (compactPrayerAmoledIds.isNotEmpty()) {
+                    val dataToRender = nateegaData.copy(themeColor = ThemeColor.Dark)
+                    for (id in compactPrayerAmoledIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            CompactPrayerWidgetRenderer.build(context, dataToRender, options)
+                        )
+                    }
+                }
+                if (compactPrayerMidnightIds.isNotEmpty()) {
+                    val dataToRender = nateegaData.copy(themeColor = ThemeColor.MidnightBlue)
+                    for (id in compactPrayerMidnightIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            CompactPrayerWidgetRenderer.build(context, dataToRender, options)
+                        )
+                    }
+                }
+                // Modern Widgets (each rendered with its own per-instance dimensions):
+                if (slimBarIds.isNotEmpty()) {
+                    for (id in slimBarIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            ModernWidgetsRenderer.buildSlimBar(context, nateegaData, options)
+                        )
+                    }
+                }
+                if (mosqueArchIds.isNotEmpty()) {
+                    for (id in mosqueArchIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            ModernWidgetsRenderer.buildMosqueArch(context, nateegaData, options)
+                        )
+                    }
+                }
+                if (smartPillIds.isNotEmpty()) {
+                    for (id in smartPillIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            ModernWidgetsRenderer.buildSmartPill(context, nateegaData, options)
+                        )
+                    }
+                }
+                if (deskCalIds.isNotEmpty()) {
+                    for (id in deskCalIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            ModernWidgetsRenderer.buildDeskCalendar(context, nateegaData, isSquare = null, options = options)
+                        )
+                    }
+                }
+                if (deskCalSquareIds.isNotEmpty()) {
+                    for (id in deskCalSquareIds) {
+                        val options = appWidgetManager.getAppWidgetOptions(id)
+                        appWidgetManager.updateAppWidget(
+                            id,
+                            ModernWidgetsRenderer.buildDeskCalendar(context, nateegaData, isSquare = true, options = options)
+                        )
+                    }
+                }
+            } else if (anyNateegaPlaced) {
+                val hint = NateegaWidgetRenderer.buildHint(context, configHintRes)
+                if (nateegaIds.isNotEmpty()) appWidgetManager.updateAppWidget(nateegaIds, hint)
+                if (nateegaClassicIds.isNotEmpty()) appWidgetManager.updateAppWidget(nateegaClassicIds, hint)
+                if (nateegaAmoledIds.isNotEmpty()) appWidgetManager.updateAppWidget(nateegaAmoledIds, hint)
+                if (nateegaMidnightIds.isNotEmpty()) appWidgetManager.updateAppWidget(nateegaMidnightIds, hint)
+                if (compactPrayerIds.isNotEmpty()) appWidgetManager.updateAppWidget(compactPrayerIds, hint)
+                if (compactPrayerClassicIds.isNotEmpty()) appWidgetManager.updateAppWidget(compactPrayerClassicIds, hint)
+                if (compactPrayerAmoledIds.isNotEmpty()) appWidgetManager.updateAppWidget(compactPrayerAmoledIds, hint)
+                if (compactPrayerMidnightIds.isNotEmpty()) appWidgetManager.updateAppWidget(compactPrayerMidnightIds, hint)
+                if (slimBarIds.isNotEmpty()) appWidgetManager.updateAppWidget(slimBarIds, hint)
+                if (mosqueArchIds.isNotEmpty()) appWidgetManager.updateAppWidget(mosqueArchIds, hint)
+                if (smartPillIds.isNotEmpty()) appWidgetManager.updateAppWidget(smartPillIds, hint)
+                if (deskCalIds.isNotEmpty()) appWidgetManager.updateAppWidget(deskCalIds, hint)
+                if (deskCalSquareIds.isNotEmpty()) appWidgetManager.updateAppWidget(deskCalSquareIds, hint)
             }
 
             // Only keep recomputing on a schedule while something is actually on screen. Each surface
             // contributes its own next transition; redraw at the earliest of them.
             val compactNotificationShown = data != null && data.showNotification &&
                 data.notificationLayout == NotificationWidgetLayout.Compact && nextData != null
-            val nextUpdateCandidates = buildList {
-                if (data != null && (screenIds.isNotEmpty() || data.showNotification)) {
+            val nextUpdateCandidates = buildList<Long> {
+                if (data != null && data.showNotification) {
                     data.nextUpdateAtMillis?.let { add(it) }
                 }
-                // The compact notification follows the next-prayer transition even when no 1x1 home
-                // widget is placed, so include its redraw time whenever it (or the 1x1 widget) is on.
-                if (nextData != null && (nextIds.isNotEmpty() || compactNotificationShown)) {
+                // The compact notification and dedicated next-prayer widgets follow the next-prayer transition
+                if (nextData != null && (compactNotificationShown || anyNextPrayerPlaced)) {
                     nextData.nextUpdateAtMillis?.let { add(it) }
                 }
                 // customData is non-null only when there's a consumer (placed widget / custom notification).
                 if (customData != null) {
                     customData.nextUpdateAtMillis?.let { add(it) }
+                }
+                if (nateegaData != null && anyNateegaPlaced) {
+                    add(nateegaData.countdownTargetMillis)
+                }
+                // Periodic non-wakeup redraw for smooth progress ring updates every 5 minutes while active
+                if (anyNextPrayerPlaced || (anyNateegaPlaced && nateegaConfig.showCountdown)) {
+                    add((now + 5.minutes).toEpochMilliseconds())
                 }
             }
             scheduleNextRedraw(nextUpdateCandidates.minOrNull())
@@ -182,22 +390,22 @@ class WidgetUpdater @Inject constructor(
     ) {
         if (!data.showNotification) {
             notificationRepository.cancelNotification(WidgetContract.NOTIFICATION_ID)
+            notificationRepository.cancelNotification("prayer_times_widget_notification")
             return
         }
-        // Compact layout reuses the 1x1 next-prayer rendering for both the collapsed and expanded
-        // views. Fall back to the table when next-prayer data is unavailable (e.g. no countdown prayer
-        // selected) so the notification never blanks.
+        // Compact layout reuses the centered next-prayer rendering. Setting big to null prevents
+        // the Android SystemUI from adding the expand/collapse chevron arrow.
         val small: RemoteViews
-        val big: RemoteViews
+        val big: RemoteViews?
         if (data.notificationLayout == NotificationWidgetLayout.Custom && customData != null) {
             // The user-authored custom layout, rendered inline (the pager arrows can't work inside a
             // notification); same view for the collapsed and expanded states.
             val custom = CustomWidgetRenderer.build(context, customData.copy(pages = emptyList()))
             small = custom
-            big = custom
+            big = null
         } else if (data.notificationLayout == NotificationWidgetLayout.Compact && nextData != null) {
-            small = WidgetRenderer.buildNextPrayerNotification(context, nextData, expanded = false)
-            big = WidgetRenderer.buildNextPrayerNotification(context, nextData, expanded = true)
+            small = WidgetRenderer.buildCenteredPrayerNotification(context, nextData)
+            big = null
         } else {
             small = WidgetRenderer.build(context, notifSmallLayout(data.adaptiveTheme), data)
             big = WidgetRenderer.build(context, notifBigLayout(data.adaptiveTheme, data.showCountdown), data)
@@ -216,6 +424,88 @@ class WidgetUpdater @Inject constructor(
                     group = WidgetContract.NOTIFICATION_GROUP,
                     customContentView = small,
                     customBigContentView = big,
+                ),
+            ),
+        )
+    }
+
+    private suspend fun updateSpiritualPillNotification(
+        nateegaData: NateegaWidgetData?,
+        showCompanion: Boolean,
+        capsuleMode: SpiritualCapsuleMode = SpiritualCapsuleMode.SmartMoments,
+    ) {
+        if (!showCompanion || capsuleMode == SpiritualCapsuleMode.Off || nateegaData == null) {
+            notificationRepository.cancelNotification(WidgetContract.SPIRITUAL_PILL_NOTIFICATION_ID)
+            notificationRepository.cancelNotification("spiritual_pill_companion_notification")
+            return
+        }
+        val contextInfo = SpiritualContextResolver.resolve(nateegaData)
+        if (capsuleMode == SpiritualCapsuleMode.SmartMoments && !contextInfo.isSmartMoment) {
+            notificationRepository.cancelNotification(WidgetContract.SPIRITUAL_PILL_NOTIFICATION_ID)
+            notificationRepository.cancelNotification("spiritual_pill_companion_notification")
+            return
+        }
+
+        val momentKey = SpiritualPillDismissStore.momentKeyForContext(contextInfo)
+        val isOngoing = (capsuleMode == SpiritualCapsuleMode.PersistentShade)
+        if (!isOngoing && SpiritualPillDismissStore.isDismissed(context, momentKey)) {
+            notificationRepository.cancelNotification(WidgetContract.SPIRITUAL_PILL_NOTIFICATION_ID)
+            notificationRepository.cancelNotification("spiritual_pill_companion_notification")
+            return
+        }
+
+        // Smart De-duplication: If any active reminder is currently shown in the notification shade,
+        // do not post the companion spiritual pill so the user never sees two notifications for the same subject!
+        val activeNotifs = runCatching {
+            (context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager)?.activeNotifications
+        }.getOrNull().orEmpty()
+        val hasActiveReminder = activeNotifs.any { notif ->
+            val chId = notif.notification.channelId
+            chId == EnsureNotificationChannelsUseCase.REMINDER_CHANNEL_ID ||
+                chId == EnsureNotificationChannelsUseCase.REMINDER_DND_CHANNEL_ID ||
+                chId == EnsureNotificationChannelsUseCase.PRE_REMINDER_CHANNEL_ID
+        }
+        if (hasActiveReminder) {
+            notificationRepository.cancelNotification(WidgetContract.SPIRITUAL_PILL_NOTIFICATION_ID)
+            notificationRepository.cancelNotification("spiritual_pill_companion_notification")
+            return
+        }
+        val pill = ModernWidgetsRenderer.buildSmartPillNotification(context, nateegaData)
+        val pillBig = ModernWidgetsRenderer.buildSmartPillExpandedNotification(context, nateegaData)
+
+        val targetRoute: DeepLinkableRoute = when {
+            contextInfo.wordTag.contains("كَهْف") || contextInfo.title.contains("الكهف") -> Route.Main.QuranKahf
+            contextInfo.wordTag.contains("مُلْك") || contextInfo.title.contains("الملك") -> Route.Main.QuranMulk
+            contextInfo.wordTag.contains("وِتْر") || contextInfo.wordTag.contains("قِيَام") || contextInfo.title.contains("الضحى") -> Route.Main.Reminder
+            else -> SpiritualPillDismissStore.resolveAzkarRoute(contextInfo.wordTag, contextInfo.title, contextInfo.subtitle)
+        }
+
+        val dismissAction = if (!isOngoing) {
+            NotificationPressAction.Broadcast(
+                action = WidgetContract.ACTION_DISMISS_SPIRITUAL_PILL,
+                requestCode = momentKey.hashCode(),
+                extras = mapOf(WidgetContract.EXTRA_MOMENT_KEY to momentKey),
+            )
+        } else {
+            null
+        }
+
+        notificationRepository.notify(
+            NotificationConfig(
+                id = WidgetContract.SPIRITUAL_PILL_NOTIFICATION_ID,
+                android = AndroidNotificationConfig(
+                    channelId = EnsureNotificationChannelsUseCase.WIDGET_CHANNEL_ID,
+                    ongoing = isOngoing,
+                    category = AndroidNotificationCategory.CATEGORY_STATUS,
+                    onlyAlertOnce = true,
+                    autoCancel = !isOngoing,
+                    showTimestamp = false,
+                    sortKey = "-2",
+                    group = WidgetContract.SPIRITUAL_PILL_NOTIFICATION_GROUP,
+                    customContentView = pill,
+                    customBigContentView = pillBig,
+                    pressAction = NotificationPressAction.Route(targetRoute),
+                    dismissAction = dismissAction,
                 ),
             ),
         )

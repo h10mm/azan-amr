@@ -3,8 +3,8 @@ package com.github.meypod.al_azan.core.domain.util
 import android.content.res.Resources
 import android.icu.text.DateFormat
 import android.icu.text.DateIntervalFormat
-import android.icu.util.DateInterval
 import android.icu.util.Calendar
+import android.icu.util.DateInterval
 import android.icu.util.TimeZone
 import android.icu.util.ULocale
 import com.github.meypod.al_azan.R
@@ -14,8 +14,8 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toLocalDateTime
 import java.text.FieldPosition
 import java.time.ZoneId
-import java.util.concurrent.ConcurrentHashMap
 import java.util.Date
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.days
 import kotlin.time.DurationUnit
@@ -23,6 +23,20 @@ import kotlin.time.Instant
 import kotlin.time.toDuration
 import kotlin.time.toJavaInstant
 import kotlinx.datetime.TimeZone as KotlinxTimeZone
+
+private fun resolveCalendarAndLocale(
+    locale: String,
+    calendar: String,
+): Pair<String, String> {
+    if (calendar == "levant") {
+        val isArabic = locale.equals("ar", ignoreCase = true) ||
+            locale.startsWith("ar-", ignoreCase = true) ||
+            locale.startsWith("ar_", ignoreCase = true)
+        val effectiveLocale = if (isArabic) "ar-SY" else locale
+        return effectiveLocale to "gregorian"
+    }
+    return locale to calendar
+}
 
 fun formatInstant(
     instant: Instant,
@@ -61,14 +75,15 @@ private fun dateFormatter(
     skeleton: String,
     numberingSystem: NumberingSystem,
 ): DateFormat {
+    val (resolvedLocale, resolvedCalendar) = resolveCalendarAndLocale(locale, calendar)
     val numbers = if (numberingSystem == NumberingSystem.Default) "" else ";numbers=${numberingSystem.value}"
     return try {
-        DateFormat.getInstanceForSkeleton(skeleton, ULocale("$locale@calendar=$calendar$numbers"))
+        DateFormat.getInstanceForSkeleton(skeleton, ULocale("$resolvedLocale@calendar=$resolvedCalendar$numbers"))
     } catch (e: IllegalArgumentException) {
         // Some OEM-modified ICU builds reject Islamic variants stock ICU supports ("Unknown calendar type").
         // Degrade to plain "islamic" rather than crash the caller (e.g. alarm scheduling).
-        if (calendar == "islamic" || !calendar.startsWith("islamic")) throw e
-        DateFormat.getInstanceForSkeleton(skeleton, ULocale("$locale@calendar=islamic$numbers"))
+        if (resolvedCalendar == "islamic" || !resolvedCalendar.startsWith("islamic")) throw e
+        DateFormat.getInstanceForSkeleton(skeleton, ULocale("$resolvedLocale@calendar=islamic$numbers"))
     }
 }
 
@@ -87,13 +102,14 @@ fun formatInstantRange(
     skeleton: String,
     numberingSystem: NumberingSystem = NumberingSystem.Default,
 ): String {
+    val (resolvedLocale, resolvedCalendar) = resolveCalendarAndLocale(locale, calendar)
     val numbers = if (numberingSystem == NumberingSystem.Default) "" else ";numbers=${numberingSystem.value}"
     val formatter = try {
-        DateIntervalFormat.getInstance(skeleton, ULocale("$locale@calendar=$calendar$numbers"))
+        DateIntervalFormat.getInstance(skeleton, ULocale("$resolvedLocale@calendar=$resolvedCalendar$numbers"))
     } catch (e: IllegalArgumentException) {
         // Same OEM ICU fallback as [formatInstant].
-        if (calendar == "islamic" || !calendar.startsWith("islamic")) throw e
-        DateIntervalFormat.getInstance(skeleton, ULocale("$locale@calendar=islamic$numbers"))
+        if (resolvedCalendar == "islamic" || !resolvedCalendar.startsWith("islamic")) throw e
+        DateIntervalFormat.getInstance(skeleton, ULocale("$resolvedLocale@calendar=islamic$numbers"))
     }
     return formatter.format(DateInterval(start.toEpochMilliseconds(), end.toEpochMilliseconds())).toString().withoutEraPlaceholder()
 }
@@ -103,14 +119,16 @@ fun formatTimeOfDay(
     is24Hour: Boolean,
     numberingSystem: NumberingSystem = NumberingSystem.Default,
     locale: String = "en-US",
-): String =
-    formatInstant(
+): String {
+    val skeleton = if (is24Hour) "HH:mm" else "h:mm"
+    return formatInstant(
         instant = instant,
         locale = locale,
         calendar = "gregorian",
-        skeleton = if (is24Hour) DateFormat.HOUR24_MINUTE else DateFormat.HOUR_MINUTE,
+        skeleton = skeleton,
         numberingSystem = numberingSystem,
-    )
+    ).replace(Regex("""\s*(?:[AaPp][Mm]|[صم]|صباحاً|مساءً)\s*"""), "").trim()
+}
 
 /** Formats [timestamp] (epoch millis) as a time-of-day string per the user's locale settings. */
 fun Settings.formatTime(timestamp: Long): String =
@@ -239,13 +257,14 @@ private val icuCalendarPrototypes = ConcurrentHashMap<Pair<String, String>, Cale
  * A fresh ICU calendar of type [calendar] in the default time zone. Cloned from a cached prototype:
  * creating one resolves locale and calendar data, which dominated scans checking many dates.
  */
-internal fun icuCalendar(calendar: String): Calendar {
+fun icuCalendar(calendar: String): Calendar {
+    val resolvedCalendar = if (calendar == "levant") "gregorian" else calendar
     val zone = TimeZone.getDefault()
-    val prototype = icuCalendarPrototypes.getOrPut(calendar to zone.id) {
-        val requested = runCatching { Calendar.getInstance(zone, ULocale("@calendar=$calendar")) }.getOrNull()
+    val prototype = icuCalendarPrototypes.getOrPut(resolvedCalendar to zone.id) {
+        val requested = runCatching { Calendar.getInstance(zone, ULocale("@calendar=$resolvedCalendar")) }.getOrNull()
         // Some OEM ICU builds reject an Islamic variant, or quietly return a Gregorian calendar for it;
         // degrade to plain "islamic" as [formatInstant] does, so date math and formatting agree.
-        if (requested != null && (requested.type == calendar || !calendar.startsWith("islamic"))) {
+        if (requested != null && (requested.type == resolvedCalendar || !resolvedCalendar.startsWith("islamic"))) {
             requested
         } else {
             Calendar.getInstance(zone, ULocale("@calendar=islamic"))

@@ -4,6 +4,8 @@ import com.github.meypod.al_azan.adhan.AdhanScheduler
 import com.github.meypod.al_azan.core.data.locale.LocalizedResources
 import com.github.meypod.al_azan.core.domain.model.alarm.AlarmSettings
 import com.github.meypod.al_azan.core.domain.model.alarm.SkippedAlarm
+import com.github.meypod.al_azan.core.domain.model.alarm.hasAnyPrayerSoundConfigured
+import com.github.meypod.al_azan.core.domain.model.alarm.withDefaultAdhanSchedule
 import com.github.meypod.al_azan.core.domain.model.calculation.CalculationAdjustments
 import com.github.meypod.al_azan.core.domain.repository.AlarmSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepository
@@ -68,6 +70,12 @@ class AdhanSyncInitializer @Inject constructor(
         if (!started.compareAndSet(expectedValue = false, newValue = true)) return
 
         scope.launch {
+            val initialSettings = settingsRepository.data.first()
+            val initialAlarmSettings = alarmSettingsRepository.data.first()
+            if (initialSettings.appIntroDone && !initialAlarmSettings.hasAnyPrayerSoundConfigured()) {
+                alarmSettingsRepository.update { it.withDefaultAdhanSchedule() }
+            }
+
             combine(
                 settingsRepository.data,
                 alarmSettingsRepository.data,

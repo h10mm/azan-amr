@@ -3,78 +3,98 @@ package com.github.meypod.al_azan.main.monthly
 import android.icu.text.DateFormat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.meypod.al_azan.R
 import com.github.meypod.al_azan.core.domain.model.settings.ThemeColor
+import com.github.meypod.al_azan.core.domain.util.formatDate
 import com.github.meypod.al_azan.core.domain.util.resolvedFirstDayOfWeek
 import com.github.meypod.al_azan.core.presentation.AlAzanThemePreview
-import com.github.meypod.al_azan.core.presentation.ClassicHighlightBackground
 import com.github.meypod.al_azan.core.presentation.DarkOnTertiaryContainer
 import com.github.meypod.al_azan.core.presentation.DarkTertiary
 import com.github.meypod.al_azan.core.presentation.DarkTertiaryContainer
 import com.github.meypod.al_azan.core.presentation.LightOnTertiaryContainer
 import com.github.meypod.al_azan.core.presentation.LightTertiaryContainer
 import com.github.meypod.al_azan.core.presentation.components.ScreenScaffold
-import com.github.meypod.al_azan.core.presentation.components.calendar.CalendarDateField
+import com.github.meypod.al_azan.core.presentation.components.calendar.CalendarDatePickerDialog
 import com.github.meypod.al_azan.core.presentation.components.calendar.CalendarPickerPrecision
 import com.github.meypod.al_azan.core.presentation.components.calendar.rememberUserPickerCalendars
-import com.github.meypod.al_azan.core.presentation.navigation.NavigationController
 import com.github.meypod.al_azan.core.presentation.util.drawHorizontalScrollbar
 import com.github.meypod.al_azan.core.presentation.util.drawVerticalScrollbar
 import com.github.meypod.al_azan.core.presentation.util.dropShadow2
 import kotlinx.datetime.LocalDate
+import kotlin.math.abs
 
-// Breathing room added to the widest measured cell text so glyphs never touch the
-// column edge. Columns are floored at this content width; the table fills the card
-// when the columns fit and scrolls horizontally (cutting off at the card edge) when
-// they don't, instead of clipping or wrapping the text.
-private val COLUMN_TEXT_CUSHION = 6.dp
-
-// End inset on every row so the last column clears the vertical scrollbar.
 private val ROW_END_INSET = 4.dp
 
 @Composable
@@ -83,9 +103,80 @@ fun MonthlyViewScreen(
     onAction: (MonthlyViewUiAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var zoomScale by remember { mutableFloatStateOf(1.0f) }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var triggerScrollToToday by remember { mutableStateOf(false) }
+
+    val lazyListState = rememberLazyListState()
+    var topBarVisible by remember { mutableStateOf(true) }
+
+    // رصد اتجاه سحب المستخدم الحقيقي فقط (UserInput) لمنع أي حلقة ارتداد عند انكماش الشريط العلوي
+    val collapseScrollConnection = remember {
+        object : NestedScrollConnection {
+            private var accumulatedDelta = 0f
+
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput) {
+                    val dy = available.y
+                    // عكس الاتجاه يصفر العداد التراكمي
+                    if ((dy < 0 && accumulatedDelta > 0) || (dy > 0 && accumulatedDelta < 0)) {
+                        accumulatedDelta = 0f
+                    }
+                    accumulatedDelta += dy
+
+                    if (accumulatedDelta < -28f && topBarVisible) {
+                        // المستخدم يسحب للأعلى لقراءة الأيام الأسفل -> إخفاء الشريط العلوي وبقاء شريط الصلوات
+                        topBarVisible = false
+                        accumulatedDelta = 0f
+                    } else if (accumulatedDelta > 28f && !topBarVisible) {
+                        // المستخدم يسحب للأسفل للعودة للأعلى -> إظهار الشريط العلوي
+                        topBarVisible = true
+                        accumulatedDelta = 0f
+                    }
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
+    // إعداد نص الشهر المحدد بدون أيقونة التقويم
+    val pickerCalendars = rememberUserPickerCalendars(uiState.settings, uiState.hijriDateAdjustment)
+    val calendarIndex = uiState.calendarMode.pickerIndex.coerceIn(pickerCalendars.indices)
+    val currentCalendar = pickerCalendars.getOrNull(calendarIndex) ?: pickerCalendars.firstOrNull()
+    val formattedMonth = remember(uiState.anchorDate, currentCalendar, uiState.settings.numberingSystem) {
+        uiState.anchorDate?.let { date ->
+            if (currentCalendar != null) {
+                formatDate(date, currentCalendar.system, DateFormat.YEAR_MONTH, uiState.settings.numberingSystem)
+            } else {
+                ""
+            }
+        } ?: ""
+    }
+
+    // نافذة اختيار الشهر عند النقر على اسم الشهر
+    if (showDatePicker && uiState.anchorDate != null) {
+        CalendarDatePickerDialog(
+            initial = uiState.anchorDate,
+            onConfirm = { picked, index ->
+                showDatePicker = false
+                onAction(MonthlyViewUiAction.OnDatePicked(picked, monthlyCalendarModeAt(index)))
+            },
+            onDismiss = { showDatePicker = false },
+            calendars = pickerCalendars,
+            weekLocale = uiState.settings.selectedLocale,
+            numberingSystem = uiState.settings.numberingSystem,
+            firstDayOfWeek = uiState.settings.resolvedFirstDayOfWeek(),
+            initialCalendarIndex = calendarIndex,
+            precision = CalendarPickerPrecision.Month,
+        )
+    }
+
     ScreenScaffold(
-        title = stringResource(R.string.monthly_view_title),
-        onBackClick = { NavigationController.navigateBack() },
+        title = "",
+        onBackClick = {},
+        showTopBar = false,
+        navigationIcon = {},
         modifier = modifier,
         floatingActionButton = {
             AnimatedVisibility(
@@ -96,13 +187,11 @@ fun MonthlyViewScreen(
                     animationSpec = tween(durationMillis = 150),
                 ),
                 exit = slideOutVertically(
-                    targetOffsetY = { it * 3 },
+                    targetOffsetY = { it / 3 },
                     animationSpec = tween(durationMillis = 200),
                 ),
             ) {
                 val buttonShape = MaterialTheme.shapes.extraLarge
-                // classic themes use the high-contrast scheme; keep this button on the
-                // normal tertiary tones so it looks the same across themes
                 val dark = uiState.themeColor.isDark()
                 val containerColor = if (uiState.themeColor.isClassic()) {
                     if (dark) DarkTertiaryContainer else LightTertiaryContainer
@@ -115,7 +204,10 @@ fun MonthlyViewScreen(
                     MaterialTheme.colorScheme.onTertiaryContainer
                 }
                 ExtendedFloatingActionButton(
-                    onClick = { onAction(MonthlyViewUiAction.OnShowThisMonthClick) },
+                    onClick = {
+                        topBarVisible = true
+                        onAction(MonthlyViewUiAction.OnShowThisMonthClick)
+                    },
                     shape = buttonShape,
                     modifier = Modifier
                         .widthIn(min = 160.dp)
@@ -132,61 +224,166 @@ fun MonthlyViewScreen(
             }
         },
         floatingActionButtonPosition = FabPosition.Center,
-        // The card fills the screen and the table scrolls inside it; the page itself must
-        // not also scroll, so the header stays pinned and the scrollbars stay anchored.
         scrollable = false,
         contentPadding = PaddingValues(),
         verticalArrangement = Arrangement.Top,
     ) {
         Column(
-            Modifier.padding(dimensionResource(R.dimen.page_padding)),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.page_padding)),
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(collapseScrollConnection),
         ) {
-            // Wrap to a second line when the two buttons can't fit side by side instead
-            // of squashing one into a 1-char-wide column.
-            FlowRow(
-                Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
+            // شريط علوي فائق النحافة ينكمش تلقائياً مع السحب
+            AnimatedVisibility(
+                visible = topBarVisible,
+                enter = expandVertically(animationSpec = tween(durationMillis = 180)) + fadeIn(animationSpec = tween(durationMillis = 180)),
+                exit = shrinkVertically(animationSpec = tween(durationMillis = 180)) + fadeOut(animationSpec = tween(durationMillis = 180)),
             ) {
-                OutlinedButton(onClick = { onAction(MonthlyViewUiAction.OnPrevMonthClick) }) {
-                    Icon(painterResource(R.drawable.arrow_back), null)
-                    Text(stringResource(R.string.prev_month), modifier = Modifier.padding(start = 6.dp))
-                }
-                OutlinedButton(onClick = { onAction(MonthlyViewUiAction.OnNextMonthClick) }) {
-                    Text(stringResource(R.string.next_month), modifier = Modifier.padding(end = 6.dp))
-                    Icon(painterResource(R.drawable.arrow_forward), null)
-                }
-            }
-            uiState.anchorDate?.let { anchorDate ->
-                // Picking a month shows it, in whichever calendar the picker was showing.
-                CalendarDateField(
-                    date = anchorDate,
-                    onDateChange = { date, index -> onAction(MonthlyViewUiAction.OnDatePicked(date, monthlyCalendarModeAt(index))) },
-                    calendars = rememberUserPickerCalendars(uiState.settings, uiState.hijriDateAdjustment),
-                    weekLocale = uiState.settings.selectedLocale,
-                    numberingSystem = uiState.settings.numberingSystem,
-                    modifier = Modifier.fillMaxWidth(),
-                    firstDayOfWeek = uiState.settings.resolvedFirstDayOfWeek(),
-                    calendarIndex = uiState.calendarMode.pickerIndex,
-                    skeleton = DateFormat.YEAR_MONTH,
-                    precision = CalendarPickerPrecision.Month,
-                )
-            }
-        }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // اسم الشاشة
+                    Text(
+                        text = stringResource(R.string.monthly_view_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
 
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Column(
-                Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
+                    // أزرار التنقل مع اسم الشهر فقط (بدون أيقونة التقويم)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        IconButton(
+                            onClick = { onAction(MonthlyViewUiAction.OnPrevMonthClick) },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.arrow_back),
+                                contentDescription = stringResource(R.string.prev_month),
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+
+                        Text(
+                            text = formattedMonth,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clip(MaterialTheme.shapes.small)
+                                .clickable { showDatePicker = true }
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+
+                        IconButton(
+                            onClick = { onAction(MonthlyViewUiAction.OnNextMonthClick) },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.arrow_forward),
+                                contentDescription = stringResource(R.string.next_month),
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+
+                    // زر القائمة المنسدلة للخيارات والتكبير (⋮)
+                    Box {
+                        IconButton(
+                            onClick = { menuExpanded = true },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_more_vert),
+                                contentDescription = "خيارات العرض",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(R.string.fit_to_screen),
+                                        fontWeight = if (zoomScale <= 1.02f) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (zoomScale <= 1.02f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                },
+                                onClick = {
+                                    zoomScale = 1.0f
+                                    menuExpanded = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(R.string.zoom_normal),
+                                        fontWeight = if (zoomScale in 1.1f..1.25f) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (zoomScale in 1.1f..1.25f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                },
+                                onClick = {
+                                    zoomScale = 1.15f
+                                    menuExpanded = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(R.string.zoom_large),
+                                        fontWeight = if (zoomScale >= 1.3f) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (zoomScale >= 1.3f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                },
+                                onClick = {
+                                    zoomScale = 1.35f
+                                    menuExpanded = false
+                                },
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.scroll_to_today)) },
+                                onClick = {
+                                    triggerScrollToToday = true
+                                    topBarVisible = true
+                                    menuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+
+            // جدول الصلوات مع شريط عناوين ثابت في القمة ودعم التكبير باليد
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                color = MaterialTheme.colorScheme.background,
             ) {
                 MonthlyTable(
                     rows = uiState.rows,
                     themeColor = uiState.themeColor,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                    zoomScale = zoomScale,
+                    onZoomScaleChange = { zoomScale = it },
+                    lazyListState = lazyListState,
+                    triggerScrollToToday = triggerScrollToToday,
+                    onScrollToTodayHandled = { triggerScrollToToday = false },
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }
@@ -197,68 +394,96 @@ fun MonthlyViewScreen(
 private fun MonthlyTable(
     rows: List<MonthlyDayRow>,
     themeColor: ThemeColor,
+    zoomScale: Float,
+    onZoomScaleChange: (Float) -> Unit,
+    lazyListState: LazyListState,
+    triggerScrollToToday: Boolean,
+    onScrollToTodayHandled: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val hScroll = rememberScrollState()
-    val vScroll = rememberScrollState()
-    val cellWidth = rememberColumnFloor(rows)
-    // Bottom-anchored horizontal scrollbar spans the whole table viewport.
-    BoxWithConstraints(modifier.drawHorizontalScrollbar(hScroll)) {
-        // Stretch the row content to the card width so SpaceBetween distributes the
-        // columns when they fit; once their combined floor exceeds the card the content
-        // overflows and the shared horizontal scroll kicks in (columns then pack).
-        val rowWidth = maxWidth
-        Column(Modifier.fillMaxSize()) {
-            // Header sits outside the vertical scroll so it stays pinned over the rows.
-            HeaderRow(cellWidth, rowWidth, ROW_END_INSET, hScroll)
-            HorizontalDivider()
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .drawVerticalScrollbar(vScroll)
-                    .verticalScroll(vScroll),
-            ) {
-                rows.forEach { row ->
-                    DayRow(row, themeColor, cellWidth, rowWidth, ROW_END_INSET, hScroll)
-                    // classic-light marks today with a filled background, so leave its
-                    // divider default; other themes get an accent-colored divider.
-                    if (row.isToday && themeColor != ThemeColor.ClassicLight) {
-                        HorizontalDivider(color = todayAccentColor(themeColor))
-                    } else {
-                        HorizontalDivider()
-                    }
-                }
+    val currentZoomScale by rememberUpdatedState(zoomScale)
+    val currentOnZoomChange by rememberUpdatedState(onZoomScaleChange)
+
+    LaunchedEffect(rows, triggerScrollToToday) {
+        val todayIndex = rows.indexOfFirst { it.isToday }
+        if (todayIndex >= 0) {
+            val targetIndex = (todayIndex - 2).coerceAtLeast(0)
+            if (triggerScrollToToday) {
+                lazyListState.animateScrollToItem(targetIndex)
+                onScrollToTodayHandled()
+            } else {
+                lazyListState.scrollToItem(targetIndex)
             }
         }
     }
-}
 
-// The widest cell text (header labels + every day's values) at the current font scale
-// and locale, so a column is never narrower than its content and text never clips.
-@Composable
-private fun rememberColumnFloor(rows: List<MonthlyDayRow>): Dp {
-    val measurer = rememberTextMeasurer()
-    val density = LocalDensity.current
-    val headerStyle = MaterialTheme.typography.labelMedium
-    val bodyStyle = MaterialTheme.typography.bodySmall
-    val headers = listOf(
-        R.string.date_column,
-        R.string.fajr,
-        R.string.dhuhr,
-        R.string.asr,
-        R.string.maghrib,
-        R.string.isha,
-    ).map { stringResource(it) }
-    return remember(rows, headers, headerStyle, bodyStyle, density) {
-        var widestPx = 0
-        headers.forEach { widestPx = maxOf(widestPx, measurer.measure(it, headerStyle).size.width) }
-        rows.forEach { row ->
-            listOf(row.day, row.fajr, row.dhuhr, row.asr, row.maghrib, row.isha).forEach {
-                widestPx = maxOf(widestPx, measurer.measure(it, bodyStyle).size.width)
+    BoxWithConstraints(
+        modifier
+            .pointerInput(Unit) {
+                // اعتراض حركة القرص بإصبعين في الطور الأولي (Initial Pass) قبل أن تسرقها عناصر التمرير الداخلي
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    do {
+                        val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                        val pressedCount = event.changes.count { it.pressed }
+                        if (pressedCount >= 2) {
+                            val zoomChange = event.calculateZoom()
+                            if (zoomChange != 1.0f && !zoomChange.isNaN() && zoomChange > 0f) {
+                                val updated = (currentZoomScale * zoomChange).coerceIn(0.85f, 1.6f)
+                                if (abs(updated - currentZoomScale) > 0.01f) {
+                                    currentOnZoomChange(updated)
+                                }
+                            }
+                            // استهلاك الحدث عند وجود إصبعين فقط لمنع القفز أو التمرير العشوائي أثناء التكبير
+                            event.changes.forEach { it.consume() }
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onDoubleTap = {
+                        val nextScale = if (currentZoomScale > 1.05f) 1.0f else 1.25f
+                        currentOnZoomChange(nextScale)
+                    },
+                )
+            }
+            .drawHorizontalScrollbar(hScroll),
+    ) {
+        val rowWidth = maxWidth
+        // مقاس الخلية الأساسي لملء الشاشة بالصلوات الـ 7، مضروباً بمقياس التكبير
+        val fitCellWidth = (rowWidth - ROW_END_INSET) / 7
+        val cellWidth = fitCellWidth * zoomScale
+
+        Column(Modifier.fillMaxSize()) {
+            // شريط الصلوات الثابت في القمة
+            HeaderRow(cellWidth, rowWidth, ROW_END_INSET, hScroll, zoomScale)
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                thickness = 1.dp,
+            )
+            // قائمة الأيام باستخدام LazyColumn لضمان سرعة 60 إطار/ثانية أثناء التكبير والتمرير
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .drawVerticalScrollbar(lazyListState),
+            ) {
+                items(
+                    items = rows,
+                    key = { it.day },
+                ) { row ->
+                    DayRow(row, themeColor, cellWidth, rowWidth, ROW_END_INSET, hScroll, zoomScale)
+                    HorizontalDivider(
+                        color = if (row.isToday) todayAccentColor(themeColor).copy(alpha = 0.5f)
+                        else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                        thickness = if (row.isToday) 1.dp else 0.5.dp,
+                    )
+                }
             }
         }
-        with(density) { widestPx.toDp() } + COLUMN_TEXT_CUSHION
     }
 }
 
@@ -268,43 +493,50 @@ private fun HeaderRow(
     rowWidth: Dp,
     endInset: Dp,
     scrollState: ScrollState,
+    zoomScale: Float,
 ) {
+    val headerFontSize = (11.5f * zoomScale).sp
+    val headerPaddingVertical = (8f * zoomScale).dp
+
     Row(
         Modifier
             .fillMaxWidth()
             .horizontalScroll(scrollState)
-            .padding(vertical = 8.dp)
-            // Floor the row at the card width so SpaceBetween has room to distribute; the
-            // end inset sits inside that bound (not added on top) so the content stays
-            // exactly the viewport width and doesn't trigger a spurious horizontal scroll.
+            .padding(vertical = headerPaddingVertical)
             .widthIn(min = rowWidth)
             .padding(end = endInset)
             .semantics(mergeDescendants = true) { heading() },
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        listOf(R.string.date_column, R.string.fajr, R.string.dhuhr, R.string.asr, R.string.maghrib, R.string.isha).forEach {
+        listOf(
+            R.string.date_column,
+            R.string.fajr,
+            R.string.sunrise,
+            R.string.dhuhr,
+            R.string.asr,
+            R.string.maghrib,
+            R.string.isha,
+        ).forEach { resId ->
+            val colText = if (resId == R.string.sunrise) "الشروق" else stringResource(resId)
             Text(
-                stringResource(it),
+                colText,
                 modifier = Modifier.width(cellWidth),
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 softWrap = false,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = headerFontSize),
+                fontWeight = FontWeight.Bold,
+                color = if (resId == R.string.sunrise) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
 
-// classic themes' primary is near-black/near-white, so it barely reads as a highlight.
-// mirror the sharia times box: classic-light gets a cream background with dark text,
-// classic-dark a gold accent, others the normal primary tint.
 @Composable
 private fun todayAccentColor(themeColor: ThemeColor): Color =
-    when {
-        themeColor == ThemeColor.ClassicLight -> MaterialTheme.colorScheme.primary
-        themeColor == ThemeColor.ClassicDark -> DarkTertiary
-        else -> MaterialTheme.colorScheme.primary
+    when (themeColor) {
+        ThemeColor.ClassicLight -> MaterialTheme.colorScheme.primary
+        ThemeColor.Dark, ThemeColor.MidnightBlue -> DarkTertiary
     }
 
 @Composable
@@ -315,60 +547,127 @@ private fun DayRow(
     rowWidth: Dp,
     endInset: Dp,
     scrollState: ScrollState,
+    zoomScale: Float,
 ) {
     val accent = todayAccentColor(themeColor)
-    val classicLightToday = row.isToday && themeColor == ThemeColor.ClassicLight
-    // One merged node per day: TalkBack reads each time with its prayer name, plus "Today".
-    val rowDescription = listOf(
-        stringResource(R.string.date_column) to row.day,
-        stringResource(R.string.fajr) to row.fajr,
-        stringResource(R.string.dhuhr) to row.dhuhr,
-        stringResource(R.string.asr) to row.asr,
-        stringResource(R.string.maghrib) to row.maghrib,
-        stringResource(R.string.isha) to row.isha,
-    ).joinToString(", ") { (name, value) -> "$name $value" }
-        .let { if (row.isToday) "${stringResource(R.string.today)}, $it" else it }
+    val todayLabel = stringResource(R.string.today)
+    val dateColLabel = stringResource(R.string.date_column)
+    val fajrLabel = stringResource(R.string.fajr)
+    val sunriseLabel = stringResource(R.string.sunrise)
+    val dhuhrLabel = stringResource(R.string.dhuhr)
+    val asrLabel = stringResource(R.string.asr)
+    val maghribLabel = stringResource(R.string.maghrib)
+    val ishaLabel = stringResource(R.string.isha)
+
+    val rowDescription = remember(row, todayLabel, dateColLabel, fajrLabel, sunriseLabel, dhuhrLabel, asrLabel, maghribLabel, ishaLabel) {
+        val base = "$dateColLabel ${row.weekday} ${row.day}, $fajrLabel ${row.fajr}, $sunriseLabel ${row.sunrise}, $dhuhrLabel ${row.dhuhr}, $asrLabel ${row.asr}, $maghribLabel ${row.maghrib}, $ishaLabel ${row.isha}"
+        if (row.isToday) "$todayLabel, $base" else base
+    }
+
+    val todayBg = when (themeColor) {
+        ThemeColor.ClassicLight -> Color(0xFF007A7E).copy(alpha = 0.12f)
+        ThemeColor.Dark -> Color(0xFF76D5D8).copy(alpha = 0.16f)
+        ThemeColor.MidnightBlue -> Color(0xFFFFD166).copy(alpha = 0.16f)
+    }
+
+    val dayNumberFontSize = (12.5f * zoomScale).sp
+    val weekdayFontSize = (9.0f * zoomScale).sp
+    val prayerFontSize = (11.5f * zoomScale).sp
+    val rowPaddingVertical = (5.5f * zoomScale).dp
+
     Row(
         Modifier
             .fillMaxWidth()
             .then(
-                if (classicLightToday) {
+                if (row.isToday) {
                     Modifier
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(ClassicHighlightBackground)
+                        .padding(horizontal = 2.dp, vertical = 1.dp)
+                        .clip(MaterialTheme.shapes.small)
+                        .background(todayBg)
                 } else {
                     Modifier
                 },
             )
             .horizontalScroll(scrollState)
-            .padding(vertical = 8.dp)
+            .padding(vertical = rowPaddingVertical)
             .widthIn(min = rowWidth)
             .padding(end = endInset)
             .semantics(mergeDescendants = true) { contentDescription = rowDescription },
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        listOf(row.day, row.fajr, row.dhuhr, row.asr, row.maghrib, row.isha).forEach {
+        // خلية اليوم والتاريخ معاً
+        Column(
+            modifier = Modifier.width(cellWidth),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             Text(
-                it,
+                text = row.day,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = dayNumberFontSize),
+                fontWeight = if (row.isToday) FontWeight.ExtraBold else FontWeight.Bold,
+                color = if (row.isToday) accent else MaterialTheme.colorScheme.onSurface,
+            )
+            if (row.weekday.isNotBlank()) {
+                Text(
+                    text = row.weekday,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = weekdayFontSize),
+                    color = if (row.isToday) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+            }
+            if (row.eventBadge != null) {
+                Text(
+                    text = "${row.eventBadge} ${if (row.isWhiteDay) "البيض" else if (row.isFastingDay && (row.eventTitle?.contains("صيام") == true)) "صيام" else row.eventTitle?.take(6) ?: ""}".trim(),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = (7.5f * zoomScale).sp),
+                    fontWeight = FontWeight.Bold,
+                    color = if (row.isWhiteDay) Color(0xFFD97706) else if (row.isFastingDay) Color(0xFF059669) else MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        // أوقات الصلوات الست: الفجر، الشروق، الظهر، العصر، المغرب، العشاء
+        val prayers = remember(row) {
+            listOf(row.fajr, row.sunrise, row.dhuhr, row.asr, row.maghrib, row.isha)
+        }
+        prayers.forEachIndexed { i, timeText ->
+            val isSunrise = i == 1
+            Text(
+                text = timeText,
                 modifier = Modifier.width(cellWidth),
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 softWrap = false,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = if (row.isToday) FontWeight.ExtraBold else FontWeight.Normal,
-                color = if (row.isToday) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = prayerFontSize),
+                fontWeight = if (row.isToday) FontWeight.Bold else FontWeight.Normal,
+                color = if (row.isToday) {
+                    accent
+                } else if (isSunrise) {
+                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
             )
         }
     }
 }
 
-private fun previewRows() = (1..31).map { MonthlyDayRow(it.toString(), "03:59", "03:59", "03:59", "03:59", "03:59", isToday = it == 15) }
+private fun previewRows() = (1..31).map {
+    MonthlyDayRow(it.toString(), "السبت", "03:59", "05:15", "11:59", "15:20", "18:05", "19:30", isToday = it == 15)
+}
 
 @Preview(showBackground = true)
 @Composable
 private fun HeaderRowPreview() {
     AlAzanThemePreview {
-        HeaderRow(64.dp, 320.dp, ROW_END_INSET, rememberScrollState())
+        HeaderRow(64.dp, 320.dp, ROW_END_INSET, rememberScrollState(), 1.0f)
     }
 }
 
@@ -379,20 +678,22 @@ private fun DayRowPreview() {
         val scroll = rememberScrollState()
         Column {
             DayRow(
-                MonthlyDayRow("15", "03:59", "13:00", "16:30", "20:15", "21:45", isToday = true),
-                ThemeColor.Default,
+                MonthlyDayRow("15", "السبت", "03:59", "05:15", "13:00", "16:30", "20:15", "21:45", isToday = true),
+                ThemeColor.Dark,
                 64.dp,
                 320.dp,
                 ROW_END_INSET,
                 scroll,
+                1.0f,
             )
             DayRow(
-                MonthlyDayRow("16", "04:00", "13:00", "16:30", "20:16", "21:46"),
-                ThemeColor.Default,
+                MonthlyDayRow("16", "الأحد", "04:00", "05:16", "13:00", "16:30", "20:16", "21:46"),
+                ThemeColor.Dark,
                 64.dp,
                 320.dp,
                 ROW_END_INSET,
                 scroll,
+                1.0f,
             )
         }
     }

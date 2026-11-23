@@ -76,17 +76,17 @@ class NotificationChannelManagerImpl @Inject constructor(
                 // shade without alerting audibly.
                 !config.soundEnabled -> setSound(null, null)
 
+                // Native Adhan & Alarm audio: played directly by Android System NotificationManagerService on the ALARM stream
+                config.soundUri != null -> setSound(
+                    config.soundUri.toUri(),
+                    alarmAudioAttributes,
+                )
+
                 // Keep importance (heads-up / full-screen) but stay audibly silent; the playback
                 // service produces the actual audio.
                 config.soundHandledExternally -> setSound(silenceUri, alarmAudioAttributes)
 
-                config.soundUri != null -> setSound(
-                    config.soundUri.toUri(),
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_UNKNOWN)
-                        .build(),
-                )
+                else -> setSound(null, null)
             }
             if (config.canBypassDnd) setBypassDnd(true)
         }

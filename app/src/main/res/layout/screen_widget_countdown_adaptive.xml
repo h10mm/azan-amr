@@ -3,12 +3,11 @@
     android:id="@+id/screen_widget_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground"
+    android:background="@drawable/widget_table_bg"
     android:gravity="center"
     android:orientation="vertical"
-    android:paddingTop="2sp"
-    android:paddingBottom="2sp"
-    android:theme="@style/WidgetExpandedBaseThemeAdaptive">
+    android:padding="12dp"
+    android:theme="@style/WidgetExpandedBaseTheme">
 
     <include
         layout="@layout/widget_expanded_header"

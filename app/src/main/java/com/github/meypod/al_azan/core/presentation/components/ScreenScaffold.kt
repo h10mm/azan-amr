@@ -28,6 +28,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -35,6 +37,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.github.meypod.al_azan.R
 import com.github.meypod.al_azan.core.presentation.AlAzanThemePreview
@@ -56,6 +61,7 @@ fun ScreenScaffold(
     title: String,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showTopBar: Boolean = true,
     titleContent: (@Composable () -> Unit)? = null,
     navigationIcon: @Composable () -> Unit = { BackButton(onBackClick) },
     actions: @Composable RowScope.() -> Unit = {},
@@ -68,30 +74,54 @@ fun ScreenScaffold(
     scrollState: ScrollState? = null,
     contentPadding: PaddingValues? = null,
     verticalArrangement: Arrangement.Vertical? = null,
+    containerColor: Color = MaterialTheme.colorScheme.background,
+    contentColor: Color = MaterialTheme.colorScheme.onBackground,
     bottomBar: @Composable () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val resolvedPadding = contentPadding ?: PaddingValues(dimensionResource(R.dimen.page_padding))
+    val defaultPadding = PaddingValues(
+        start = dimensionResource(R.dimen.page_padding),
+        end = dimensionResource(R.dimen.page_padding),
+        top = 4.dp,
+        bottom = 12.dp,
+    )
+    val resolvedPadding = contentPadding ?: defaultPadding
     val resolvedArrangement =
         verticalArrangement ?: Arrangement.spacedBy(dimensionResource(R.dimen.element_padding))
     val fallbackScrollState = rememberScrollState()
     val resolvedScrollState = if (scrollable) (scrollState ?: fallbackScrollState) else null
     Scaffold(
         modifier = modifier,
+        containerColor = containerColor,
+        contentColor = contentColor,
         snackbarHost = snackbarHost,
         topBar = {
-            CenterAlignedTopAppBar(
-                navigationIcon = navigationIcon,
-                title = {
-                    if (titleContent != null) {
-                        titleContent()
-                    } else {
-                        Text(title, modifier = Modifier.semantics { heading() })
-                    }
-                },
-                actions = actions,
-                expandedHeight = topBarExpandedHeight ?: TopAppBarDefaults.TopAppBarExpandedHeight,
-            )
+            if (showTopBar) {
+                CenterAlignedTopAppBar(
+                    navigationIcon = navigationIcon,
+                    title = {
+                        if (titleContent != null) {
+                            titleContent()
+                        } else {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.semantics { heading() },
+                            )
+                        }
+                    },
+                    actions = actions,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = containerColor,
+                        scrolledContainerColor = containerColor,
+                        titleContentColor = contentColor,
+                        navigationIconContentColor = contentColor,
+                        actionIconContentColor = contentColor,
+                    ),
+                    expandedHeight = topBarExpandedHeight ?: 48.dp,
+                )
+            }
         },
         floatingActionButton = floatingActionButton,
         floatingActionButtonPosition = floatingActionButtonPosition,
@@ -111,7 +141,6 @@ fun ScreenScaffold(
                             val top = coords.localToWindow(Offset.Zero).y
                             viewportBounds = PageScrollViewportBounds(top, top + coords.size.height)
                         }
-                        .fadeScrollEdges(resolvedScrollState, Orientation.Vertical)
                         .drawVerticalScrollbar(resolvedScrollState)
                         .verticalScroll(resolvedScrollState)
                 } else {

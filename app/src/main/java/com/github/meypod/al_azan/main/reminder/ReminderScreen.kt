@@ -10,6 +10,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.github.meypod.al_azan.core.domain.model.reminder.SunnahPreset
+import com.github.meypod.al_azan.core.domain.model.reminder.SunnahPresets
+import com.github.meypod.al_azan.core.presentation.navigation.Route
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -106,7 +114,7 @@ fun ReminderScreen(
     }
 
     ScreenScaffold(
-        title = stringResource(R.string.reminders_title),
+        title = "تذكيرات السنن والنوافل",
         onBackClick = { NavigationController.navigateBack() },
         modifier = modifier,
         navigationIcon = {
@@ -214,11 +222,48 @@ fun ReminderScreen(
                 }
             }
         }
+        val presetIds = remember { SunnahPresets.list.map { it.id }.toSet() }
+        val customReminders = remember(uiState.reminders) {
+            uiState.reminders.filter { it.id !in presetIds }
+        }
+        val presetsByCategory = remember {
+            SunnahPresets.list.groupBy { it.category }
+        }
+
         Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding))) {
-            if (uiState.reminders.isEmpty()) {
-                EmptyState(onAction)
-            } else {
-                uiState.reminders.forEach { r ->
+            // 1. Grouped Sunnah Presets
+            presetsByCategory.forEach { (categoryName, presets) ->
+                Text(
+                    text = categoryName,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 2.dp, start = 4.dp),
+                )
+                presets.forEach { preset ->
+                    val existing = uiState.reminders.firstOrNull { it.id == preset.id }
+                    val isEnabled = existing?.enabled == true
+                    SunnahPresetCard(
+                        preset = preset,
+                        isEnabled = isEnabled,
+                        onEnabledChange = { enabled ->
+                            onAction(ReminderUiAction.OnToggleEnabled(preset.id, enabled))
+                            guardEnable(enabled) { onAction(ReminderUiAction.OnSetEnabled(setOf(preset.id), false)) }
+                        },
+                    )
+                }
+            }
+
+            // 2. Custom User Reminders Section
+            if (customReminders.isNotEmpty()) {
+                Text(
+                    text = "التذكيرات المخصصة",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 2.dp, start = 4.dp),
+                )
+                customReminders.forEach { r ->
                     ReminderRow(
                         reminder = r,
                         repeatLabel = repeatLabel(r, uiState.settings),
@@ -232,8 +277,8 @@ fun ReminderScreen(
                         },
                     )
                 }
-                Spacer(Modifier.height(62.dp))
             }
+            Spacer(Modifier.height(72.dp))
         }
     }
 
@@ -554,5 +599,79 @@ private fun ReminderScreenLoadedPreview() {
             ),
             onAction = {},
         )
+    }
+}
+
+@Composable
+private fun SunnahPresetCard(
+    preset: SunnahPreset,
+    isEnabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+) {
+    ACard(
+        shadowElevation = if (isEnabled) 2.dp else 0.dp,
+        tonalElevation = if (isEnabled) 2.dp else 0.dp,
+    ) { cardPadding ->
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(cardPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = preset.iconEmoji,
+                    fontSize = 24.sp,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = preset.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = preset.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (preset.isQuranSurah) {
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedButton(
+                            onClick = {
+                                if (preset.surahNumber == 67) {
+                                    NavigationController.navigateTo(Route.Main.QuranMulk)
+                                } else {
+                                    NavigationController.navigateTo(Route.Main.QuranKahf)
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                            modifier = Modifier.height(30.dp),
+                        ) {
+                            Text("📖 قراءة السورة الآن", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    } else if (preset.isAzkar) {
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedButton(
+                            onClick = { NavigationController.navigateTo(Route.Main.Azkar) },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                            modifier = Modifier.height(30.dp),
+                        ) {
+                            Text("📿 فتح الأذكار", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+            Switch(
+                checked = isEnabled,
+                onCheckedChange = onEnabledChange,
+            )
+        }
     }
 }

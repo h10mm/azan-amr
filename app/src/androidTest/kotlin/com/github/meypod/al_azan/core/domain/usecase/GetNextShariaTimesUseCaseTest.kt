@@ -8,6 +8,7 @@ import com.github.meypod.al_azan.core.domain.model.calculation.CalculationAdjust
 import com.github.meypod.al_azan.core.domain.model.calculation.CalculationLocationDetail
 import com.github.meypod.al_azan.core.domain.util.toLocalDate
 import io.github.meypod.adhan_kotlin.CalculationMethod
+import io.github.meypod.adhan_kotlin.MidnightMethod
 import io.github.meypod.adhan_kotlin.data.DateComponents
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -53,6 +54,7 @@ class GetNextShariaTimesUseCaseTest {
         instant = instant,
         calculationParameters = params,
         calculationAdjustments = CalculationAdjustments(),
+        midnightMethod = MidnightMethod.SunsetToFajr,
         arabicCalendar = "islamic",
         locationDetail = location,
         excluding = excluding,
@@ -102,6 +104,7 @@ class GetNextShariaTimesUseCaseTest {
             instant = instant,
             calculationParameters = params,
             calculationAdjustments = CalculationAdjustments(),
+            midnightMethod = MidnightMethod.SunsetToFajr,
             arabicCalendar = "islamic",
             locationDetail = location,
             alarmSettings = alarmSettings,
@@ -126,6 +129,7 @@ class GetNextShariaTimesUseCaseTest {
             instant = instant,
             calculationParameters = params,
             calculationAdjustments = CalculationAdjustments(),
+            midnightMethod = MidnightMethod.SunsetToFajr,
             arabicCalendar = "islamic",
             locationDetail = location,
             alarmSettings = alarmSettings,
@@ -151,6 +155,7 @@ class GetNextShariaTimesUseCaseTest {
             instant = instant,
             calculationParameters = params,
             calculationAdjustments = CalculationAdjustments(),
+            midnightMethod = MidnightMethod.SunsetToFajr,
             arabicCalendar = "islamic",
             locationDetail = location,
             alarmSettings = alarmSettings,
@@ -173,6 +178,7 @@ class GetNextShariaTimesUseCaseTest {
         instant = instant,
         calculationParameters = params,
         calculationAdjustments = CalculationAdjustments(),
+        midnightMethod = MidnightMethod.SunsetToFajr,
         arabicCalendar = "islamic",
         locationDetail = location,
         alarmSettings = alarmSettings,
@@ -240,6 +246,7 @@ class GetNextShariaTimesUseCaseTest {
             instant = instant,
             calculationParameters = params,
             calculationAdjustments = CalculationAdjustments(),
+            midnightMethod = MidnightMethod.SunsetToFajr,
             arabicCalendar = "islamic",
             locationDetail = location,
             alarmSettings = alarmSettings,

@@ -2,16 +2,29 @@ package com.github.meypod.al_azan
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.view.KeyEvent
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.github.meypod.al_azan.alarm.AlarmActivity
+import com.github.meypod.al_azan.core.domain.model.adhan.AdhanKey
+import com.github.meypod.al_azan.core.domain.model.settings.DefaultAdhanEntryId
+import com.github.meypod.al_azan.core.domain.model.settings.NotificationWidgetLayout
+import com.github.meypod.al_azan.core.domain.model.settings.Settings
+import com.github.meypod.al_azan.core.domain.model.settings.getDefaultAdhanEntries
+import com.github.meypod.al_azan.core.domain.model.settings.mapAdhanIdToEntry
+import com.github.meypod.al_azan.adhan.AdhanFiringHandler
+import com.github.meypod.al_azan.core.domain.model.adhan.Prayer
+import com.github.meypod.al_azan.core.domain.repository.AlarmSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
 import com.github.meypod.al_azan.core.presentation.AlAzanTheme
 import com.github.meypod.al_azan.core.presentation.navigation.NavigationController
@@ -21,9 +34,10 @@ import com.github.meypod.al_azan.core.presentation.navigation.deepLinkPatterns
 import com.github.meypod.al_azan.core.presentation.navigation.deeplink.parseUriToRoute
 import com.github.meypod.al_azan.di.LanguageSync
 import com.github.meypod.al_azan.playback.PlaybackService
+import kotlinx.coroutines.flow.first
+import com.github.meypod.al_azan.widget.WidgetUpdater
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -33,35 +47,90 @@ class MainActivity : AppCompatActivity() {
     lateinit var settingsRepository: SettingsRepository
 
     @Inject
+    lateinit var alarmSettingsRepository: AlarmSettingsRepository
+
+    @Inject
     lateinit var languageSync: LanguageSync
+
+    @Inject
+    lateinit var adhanFiringHandler: AdhanFiringHandler
+
+    @Inject
+    lateinit var schedulerReconciler: SchedulerReconciler
+
+    @Inject
+    lateinit var widgetUpdater: WidgetUpdater
+
+    @Inject
+    lateinit var nateegaWidgetConfigRepository: com.github.meypod.al_azan.core.domain.repository.NateegaWidgetConfigRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
+        
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Reconcile the app locale with stored settings before composing: applies the migrated/selected
-        // language and its layout direction (RTL). Done here (not Application.onCreate) so it lands at
-        // the lifecycle point where autoStoreLocales actually persists setApplicationLocales.
-        val initialSettings = runBlocking {
+        
+        var initialSettings: Settings? by mutableStateOf(settingsRepository.getLatest())
+        
+        lifecycleScope.launch {
             languageSync.reconcile()
-            settingsRepository.fetch()
+            val current = settingsRepository.fetch()
+            val allDefaults = getDefaultAdhanEntries()
+            val updatedSaved = (allDefaults + current.savedAdhanAudioEntries).distinctBy { it.id }
+            val currentDefaultId = current.selectedAdhanEntries[AdhanKey.Default]?.id
+            val isOldDefault = currentDefaultId == null ||
+                currentDefaultId == DefaultAdhanEntryId.AbdulBasitAbduSamad.key ||
+                currentDefaultId == DefaultAdhanEntryId.TakbeerOnly.key
+            if (isOldDefault || updatedSaved.size != current.savedAdhanAudioEntries.size) {
+                settingsRepository.update { s ->
+                    val newSelected = if (isOldDefault) {
+                        s.selectedAdhanEntries + (AdhanKey.Default to mapAdhanIdToEntry(DefaultAdhanEntryId.TakbeerOnly.key))
+                    } else {
+                        s.selectedAdhanEntries
+                    }
+                    s.copy(
+                        savedAdhanAudioEntries = updatedSaved,
+                        selectedAdhanEntries = newSelected,
+                    )
+                }
+            }
+            if (!current.prayerNotifDefaultDisabled) {
+                settingsRepository.update { s ->
+                    s.copy(
+                        showWidget = false,
+                        prayerNotifDefaultDisabled = true,
+                    )
+                }
+            }
+            val currentNateega = nateegaWidgetConfigRepository.data.first()
+            if (!currentNateega.showSpiritualPillNotification) {
+                nateegaWidgetConfigRepository.update { it.copy(showSpiritualPillNotification = true) }
+            }
+            widgetUpdater.update()
+            initialSettings = settingsRepository.fetch()
         }
 
-        val startingRoute = routeFromIntent(intent)
+        val receivedIntent = intent
+        val startingRoute = routeFromIntent(receivedIntent)
         intent = null // consume
+        handleTestIntent(receivedIntent)
 
         setContent {
-            val settings by settingsRepository.data.collectAsState(initial = initialSettings)
+            val currentInitialSettings = initialSettings
+            if (currentInitialSettings != null) {
+                val settings by settingsRepository.data.collectAsState(initial = currentInitialSettings)
 
-            AlAzanTheme(settings.themeColor, settings.displayScale) {
-                NavigationRoot(
-                    appIntroDone = initialSettings.appIntroDone,
-                    startingRoute = startingRoute,
-                )
+                AlAzanTheme(settings.themeColor, settings.displayScale) {
+                    NavigationRoot(
+                        appIntroDone = settings.appIntroDone,
+                        startingRoute = startingRoute,
+                    )
+                }
             }
         }
 
         openAlarmScreenWhileSounding()
+        handleTestIntent(intent)
     }
 
     /**
@@ -73,13 +142,20 @@ class MainActivity : AppCompatActivity() {
      * retires the alarm, which is what stops this from re-opening what the user just dealt with.
      */
     private fun openAlarmScreenWhileSounding() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                PlaybackService.activeAlarm.collect { alarm ->
-                    if (alarm != null) startActivity(AlarmActivity.intent(this@MainActivity))
-                }
+        // Dispensed with: user opted for notification-only mode without full-screen AlarmActivity.
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val tasbihCallback = com.github.meypod.al_azan.main.tasbih.TasbihVolumeKeyBus.onVolumeKeyIncrement
+        if (tasbihCallback != null &&
+            (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)
+        ) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                tasbihCallback.invoke()
             }
+            return true
         }
+        return super.dispatchKeyEvent(event)
     }
 
     // A deep link / DND-rule tap that arrives while the Activity is already running comes here (the
@@ -87,7 +163,31 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        handleTestIntent(intent)
         routeFromIntent(intent)?.let { NavigationController.navigateTo(it) }
+    }
+
+    private fun handleTestIntent(intent: Intent?) {
+        Log.d("MainActivity", "handleTestIntent action: ${intent?.action}")
+        if (intent?.action == "com.github.meypod.al_azan.action.TEST_ADHAN") {
+            lifecycleScope.launch {
+                Log.d("MainActivity", "Calling onAdhanFired for Isha now")
+                settingsRepository.update { it.copy(deliveredAlarmTimestamps = emptyMap()) }
+                adhanFiringHandler.onAdhanFired(Prayer.Isha, false, System.currentTimeMillis())
+            }
+        } else if (intent?.action == "com.github.meypod.al_azan.action.TEST_MISSED_ADHAN") {
+            lifecycleScope.launch {
+                settingsRepository.update { it.copy(deliveredAlarmTimestamps = emptyMap()) }
+                schedulerReconciler.onAdhanTimeSkipped(Prayer.Isha, System.currentTimeMillis() - 300_000L)
+            }
+        } else if (intent?.action == "com.github.meypod.al_azan.action.OPEN_TROUBLESHOOT") {
+            lifecycleScope.launch {
+                settingsRepository.update { it.copy(appIntroDone = true) }
+                com.github.meypod.al_azan.core.presentation.navigation.NavigationController.navigateTo(
+                    com.github.meypod.al_azan.core.presentation.navigation.Route.Main.Settings.Troubleshoot
+                )
+            }
+        }
     }
 
     // MainActivity is exported, so the URI is attacker-reachable; a malformed deep link must not crash

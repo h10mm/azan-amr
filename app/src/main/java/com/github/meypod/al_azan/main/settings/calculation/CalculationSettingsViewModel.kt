@@ -2,6 +2,7 @@ package com.github.meypod.al_azan.main.settings.calculation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.meypod.al_azan.core.domain.model.calculation.canonicalParameters
 import com.github.meypod.al_azan.core.domain.model.calculation.needsPolarCircleResolution
 import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.FavoriteLocationsRepository
@@ -70,7 +71,7 @@ class CalculationSettingsViewModel
     private fun onCalculationMethodChange(value: CalculationMethod) {
         viewModelScope.launch {
             calculationSettingsRepository.update {
-                it.copy(parameters = value.parameters)
+                it.copy(parameters = value.canonicalParameters())
             }
         }
     }

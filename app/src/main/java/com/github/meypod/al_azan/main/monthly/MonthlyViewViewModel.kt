@@ -6,11 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.github.meypod.al_azan.core.domain.model.adhan.Prayer
 import com.github.meypod.al_azan.core.domain.model.adhan.timesOrNull
 import com.github.meypod.al_azan.core.domain.model.calculation.CalculationSettings
+import com.github.meypod.al_azan.core.domain.model.calendar.CalendarSystem
 import com.github.meypod.al_azan.core.domain.model.settings.Settings
 import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.FavoriteLocationsRepository
 import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
 import com.github.meypod.al_azan.core.domain.usecase.GetShariaTimesUseCase
+import com.github.meypod.al_azan.core.domain.util.IslamicCalendarEvents
+import com.github.meypod.al_azan.core.domain.util.IslamicEventType
 import com.github.meypod.al_azan.core.domain.util.addCalendarMonths
 import com.github.meypod.al_azan.core.domain.util.addDaysTimeZoneAware
 import com.github.meypod.al_azan.core.domain.util.calendarMonthDays
@@ -112,8 +115,21 @@ class MonthlyViewViewModel @Inject constructor(
                 val adjustment = lunarAdjustment(mode, calcSettings)
                 val anchorInCalendar = addDaysTimeZoneAware(anchorInstant, adjustment)
 
+                val lunarSystem = CalendarSystem(
+                    settings.selectedArabicCalendar,
+                    settings.selectedLocaleForArabicCalendar ?: settings.selectedLocale,
+                    calcSettings.calculationAdjustments.hijriDate,
+                )
+
                 val rows = calendarMonthDays(anchorInCalendar, calendar).map { calendarDay ->
                     val realInstant = addDaysTimeZoneAware(calendarDay, -adjustment)
+                    val civilDate = realInstant.toLocalDate()
+                    val dayEvents = IslamicCalendarEvents.getEventsForDate(civilDate, lunarSystem)
+                    val primaryEvent = dayEvents.firstOrNull { it.type == IslamicEventType.Occasion }
+                        ?: dayEvents.firstOrNull { it.type == IslamicEventType.WhiteDay }
+                        ?: dayEvents.firstOrNull { it.type == IslamicEventType.FastingFard }
+                        ?: dayEvents.firstOrNull { it.type == IslamicEventType.FastingSunnah }
+
                     val times = if (parameters != null && location != null) {
                         getShariaTimesUseCase(
                             instant = realInstant,
@@ -134,12 +150,18 @@ class MonthlyViewViewModel @Inject constructor(
 
                     MonthlyDayRow(
                         day = formatInstant(calendarDay, locale, calendar, DateFormat.DAY, settings.numberingSystem),
+                        weekday = formatInstant(calendarDay, locale, calendar, DateFormat.ABBR_WEEKDAY, settings.numberingSystem),
                         fajr = timeOf(Prayer.Fajr),
+                        sunrise = timeOf(Prayer.Sunrise),
                         dhuhr = timeOf(Prayer.Dhuhr),
                         asr = timeOf(Prayer.Asr),
                         maghrib = timeOf(Prayer.Maghrib),
                         isha = timeOf(Prayer.Isha),
                         isToday = isSameGregorianDay(realInstant, now),
+                        eventTitle = primaryEvent?.title,
+                        eventBadge = primaryEvent?.badge,
+                        isWhiteDay = dayEvents.any { it.type == IslamicEventType.WhiteDay },
+                        isFastingDay = dayEvents.any { it.type == IslamicEventType.FastingFard || it.type == IslamicEventType.FastingSunnah || it.type == IslamicEventType.WhiteDay },
                     )
                 }
 

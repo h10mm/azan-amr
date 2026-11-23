@@ -4,7 +4,7 @@
     <!-- ============================================================
          Shared / common UI  (core/presentation/components)
          ============================================================ -->
-    <string name="app_name">Al-Azan</string>
+    <string name="app_name">Azan-Amr</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
     <string name="close">Close</string>
@@ -40,12 +40,16 @@
     <string name="back_button">Back</string>
     <string name="next_button">Next</string>
     <string name="finish_button">Finish</string>
+    <string name="nateega_classic_desc">Egyptian Wall Calendar - Classic Paper</string>
+    <string name="nateega_amoled_desc">Egyptian Wall Calendar - AMOLED True Black</string>
+    <string name="nateega_midnight_desc">Egyptian Wall Calendar - Midnight Blue</string>
 
     <!-- ============================================================
          Prayer names  (core/domain/model/adhan)
          ============================================================ -->
     <string name="fajr">Fajr</string>
     <string name="sunrise">Sunrise</string>
+    <string name="sunrise_short">Sunrise</string>
     <string name="dhuhr">Dhuhr</string>
     <string name="asr">Asr</string>
     <string name="sunset">Sunset</string>
@@ -169,7 +173,7 @@
          ============================================================ -->
     <string name="settings">Settings</string>
     <string name="qibla">Qibla</string>
-    <string name="counter">Qada Counter</string>
+    <string name="counter">Electronic Tasbih</string>
     <string name="reminder">Reminder</string>
     <string name="alarm_settings_title">Alarm Settings</string>
     <string name="schedule_and_muezzin_title"><![CDATA[Schedule & Muezzin]]></string>
@@ -177,6 +181,12 @@
     <string name="interface_settings">Interface Settings</string>
     <string name="widget_settings_title">Widget Settings</string>
     <string name="backup_and_restore_title"><![CDATA[Backup & Restore]]></string>
+
+    <!-- الأزرار الجديدة في قائمة الإعدادات -->
+    <string name="monthly_view">Monthly Calendar</string>
+    <string name="reminders">Reminders</string>
+    <string name="qada_counter">Qada Counter</string>
+    <string name="upcoming_events">Upcoming Events</string>
 
     <!-- ============================================================
          Location  (main/location)
@@ -233,6 +243,9 @@
     <string name="theme_classic_light">Classic Light</string>
     <string name="theme_system_default">System Default</string>
     <string name="theme_dynamic">Dynamic</string>
+    <string name="theme_modern_teal" translatable="false">Modern Teal</string>
+    <string name="theme_midnight_blue" translatable="false">Midnight Blue</string>
+    <string name="theme_emerald" translatable="false">Emerald</string>
     <string name="countdown_timer">Home countdown timer</string>
     <string name="countdown_timer_help">Show time remaining to next prayer on the home screen.</string>
     <string name="countdown_skip_non_prayers">Count down to prayers only</string>
@@ -266,6 +279,8 @@
     <string name="calendar_persian">Persian</string>
     <string name="calendar_ethiopic">Ethiopic</string>
     <string name="calendar_buddhist">Buddhist</string>
+    <string name="calendar_coptic">Coptic (Tout, Baba, Hator…)</string>
+    <string name="calendar_levant">Levantine Gregorian (Kanun, Shubat…)</string>
 
     <!-- ============================================================
          Lunar calendar  (core/domain/model/lunar, settings/calculation)
@@ -412,6 +427,15 @@
     <!-- Muezzin voices (core/domain/model/settings) -->
     <string name="muezzin">Muezzin</string>
     <string name="unknown">Unknown</string>
+    <string name="takbeer_only">Takbeer only</string>
+    <string name="dual_calendar_title">Dual Calendar</string>
+    <string name="calendar_mode_hijri">Hijri Calendar</string>
+    <string name="calendar_mode_gregorian">Gregorian Calendar</string>
+    <string name="prayers_for_day">Prayer Times for Selected Day</string>
+    <string name="selected_day_current">Today</string>
+    <string name="selected_day_friday">Blessed Friday</string>
+    <string name="selected_day_white">White Days</string>
+    <string name="selected_day_sunnah">Sunnah Fasting</string>
     <string name="masjid_an_nabawi">Masjid An Nabawi</string>
     <string name="abdul_basit_abdus_samad">Abdul-Basit Abdus-Samad</string>
     <string name="ragheb_mustafa_ghalwash">Ragheb Mustafa Ghalwash</string>
@@ -611,15 +635,29 @@
     <string name="compass_accuracy_low">Low</string>
     <string name="compass_accuracy_unreliable">Unreliable</string>
     <string name="compass_sensor_unavailable">Compass sensor unavailable</string>
+    <string name="compass_calibrating">Calibrating</string>
+    <string name="compass_magnetic_interference">Magnetic interference detected</string>
+    <string name="compass_temporarily_unavailable">Temporarily unavailable</string>
     <string name="qibla_facing_a11y">Facing Qibla</string>
     <string name="qibla_turn_right_a11y">Turn right %1$d degrees to face Qibla</string>
     <string name="qibla_turn_left_a11y">Turn left %1$d degrees to face Qibla</string>
     <string name="qibla_unreliable_a11y">Compass direction unreliable, calibrate your device</string>
+    <string name="qibla_calibration_hint">Move phone in a figure-8 motion to calibrate compass</string>
+    <string name="qibla_interference_hint">Nearby magnetic interference — move away from metal &amp; wave in a figure-8</string>
+    <string name="qibla_gps_permission_denied_brief">Location permission denied — continuing with your saved city.</string>
+    <string name="qibla_gps_permission_permanently_denied">Location permission was permanently denied. Open app settings to allow location access, or continue using your saved city.</string>
+    <string name="qibla_gps_service_disabled">Location service (GPS) is turned off. Please enable it to fetch your exact coordinates, or continue using your saved city.</string>
+    <string name="qibla_gps_fetch_failed">Could not get a GPS fix right now — continuing with your saved city.</string>
+    <string name="qibla_gps_updated">GPS location updated</string>
 
     <!-- ============================================================
          Monthly view  (main/monthly)
          ============================================================ -->
-    <string name="monthly_view_title">Monthly view</string>
+    <string name="monthly_view_title">Imsakiya</string>
+    <string name="fit_to_screen">Fit to screen</string>
+    <string name="zoom_normal">Normal size (100%)</string>
+    <string name="zoom_large">Large text (120%)</string>
+    <string name="scroll_to_today">Go to Today</string>
     <string name="prev_month">Prev Month</string>
     <string name="next_month">Next Month</string>
     <string name="prev_year">Prev Year</string>
@@ -696,11 +734,12 @@
     <!-- ============================================================
          Fullscreen alarm & alarm actions  (alarm, adhan, reminder)
          ============================================================ -->
-    <string name="alarm_azan_header">AZAN</string>
+    <string name="alarm_azan_header">AZAN-Amr</string>
     <string name="alarm_swipe_up_hint">Swipe Up For More Options</string>
-    <string name="alarm_just_dismiss">Just Dismiss</string>
-    <string name="alarm_just_dismiss_silence">Dismiss &amp; silence phone</string>
-    <string name="alarm_dismiss_and_silent">Dismiss and Silent %1$dm</string>
+    <string name="stop_adhan">Stop Adhan</string>
+    <string name="alarm_just_dismiss">Stop Adhan</string>
+    <string name="alarm_just_dismiss_silence">Stop Adhan &amp; silence phone</string>
+    <string name="alarm_dismiss_and_silent">Stop Adhan and Silent %1$dm</string>
     <string name="alarm_remind">Remind in %1$dm</string>
     <string name="adhan_remind_body">%1$s was %2$d minutes ago</string>
     <string name="next_prayer_label">Next</string>
@@ -770,7 +809,7 @@
     <string name="home_url" translatable="false"><a href="%1$s">%1$s</a></string>
     <string name="license">License</string>
     <string name="about_credits">All copyright for Adhan voices belongs to their respective owners.</string>
-    
+
     <!-- ============================================================
          Upcoming alarms  (main/upcoming_alarms)
          ============================================================ -->
@@ -788,5 +827,328 @@
     <!-- Reschedule-feedback time carrying a relative day. "%1$s" = clock time, "%2$s" = Tomorrow / weekday
          (both already localized); this string is only the separator, so it isn't translated. -->
     <string name="reschedule_when" translatable="false">%1$s, %2$s</string>
+    <!-- Dedication -->
+    <string name="dedication_badge">Ongoing Charity (Sadaqah Jariyah)</string>
+    <string name="dedication_basmala">In the Name of Allah, the Most Gracious, the Most Merciful</string>
+    <string name="dedication_opening">May Allah make this app an ongoing charity and lasting benefit.\nYours is the reward of every prayer and remembrance, and his is your sincere dua.</string>
+    <string name="dedication_request">We kindly ask for a sincere prayer of mercy and forgiveness for my father:</string>
+    <string name="dedication_name">Amr Heiba</string>
+    <string name="dedication_status">May Allah have mercy on him and forgive him</string>
+    <string name="dedication_dua">“O Allah, forgive him and have mercy upon him, pardon him,\ngrant him Al-Firdaws Al-A’la as his eternal home,\ncomfort him in his grave, and make this work a light for him\nand an intercessor on the Day he meets You.”</string>
+    <string name="dedication_closing">May Allah reward everyone who benefits from this app and prays for him,\nand grant you even more than what you prayed for.</string>
+    <string name="dedication_copy_dua">Copy Dua</string>
+    <string name="dedication_share">Share Dedication</string>
+    <string name="dedication_copied_toast">Dua copied to clipboard</string>
+    <string name="dedication_info_tooltip">Version information</string>
+    <!-- ============================================================
+         Onboarding (3-step flow)  (intro/)
+         ============================================================ -->
+    <string name="intro_location_step_title">Your location</string>
+    <string name="intro_location_search_label">Search for your city or town</string>
+    <string name="intro_location_search_placeholder">Type a name, e.g. Cairo, Tanta, Makkah</string>
+    <string name="intro_location_searching">Searching…</string>
+    <string name="intro_location_no_results">No matching city found. Check the spelling, use GPS, or choose manually.</string>
+    <string name="intro_location_or">or</string>
+    <string name="intro_location_gps_button">Use my current location (GPS)</string>
+    <string name="intro_location_gps_locating">Locating you…</string>
+    <string name="intro_location_manual_button">Choose country and city manually</string>
+    <string name="intro_location_selected_title">Selected location</string>
+    <string name="intro_location_none_selected">No location chosen yet. Search by name, use GPS, or choose manually.</string>
+    <string name="intro_location_required">Please choose your location first so prayer times can be calculated.</string>
+    <string name="intro_calculation_auto_note">The calculation method was picked automatically for your country. Change it below only if your local mosque uses a different one.</string>
+    <string name="intro_final_title">Make sure the adhan always sounds</string>
+    <string name="intro_final_body">Adhan with sound, vibration and a notification is already switched on for the five daily prayers, so there is nothing to turn on. Android needs the permissions below to start it exactly on time, even while the phone is idle. You can change any of this later in Settings.</string>
+    <string name="intro_permissions_title">Permissions the adhan needs</string>
+    <string name="intro_permission_notifications_title">Notifications</string>
+    <string name="intro_permission_notifications_body">To show the prayer notification and let you stop the adhan.</string>
+    <string name="intro_permission_exact_alarm_title">Alarms and reminders</string>
+    <string name="intro_permission_exact_alarm_body">To start the adhan at the exact second instead of a few minutes late.</string>
+    <string name="intro_permission_fullscreen_title">Show over the lock screen</string>
+    <string name="intro_permission_fullscreen_body">To open the adhan screen while the phone is locked.</string>
+    <string name="intro_permission_granted">Granted</string>
+    <string name="intro_permission_required">Needed</string>
+    <string name="intro_permissions_grant_button">Grant permissions</string>
+    <string name="intro_permissions_all_granted">All set. The adhan can be delivered on time.</string>
+    <string name="intro_alarm_icon_title">Hide the alarm icon (optional)</string>
+    <string name="intro_alarm_icon_help">Only for Google Pixel and similar phones that keep an alarm icon in the status bar (and can interfere with Adaptive Charging). Turn this on to avoid it. If the icon does not bother you, leave it off: the default is the most reliable way to deliver the adhan.</string>
+    <!-- Unified Readiness & Device Detection -->
+    <string name="readiness_shield_title">Adhan Readiness &amp; Troubleshoot</string>
+    <string name="readiness_meter_complete">🎉 Your phone is 100% ready for Adhan</string>
+    <string name="readiness_meter_incomplete">Essential permissions for Adhan delivery</string>
+    <string name="readiness_core_pillars_title">⭐ Essential options (Power everything in app):</string>
+    <string name="readiness_device_section_title">📱 Device-specific setting:</string>
+    <string name="readiness_change_device">Change ▾</string>
+    <string name="readiness_select_device_hint">Select your device family manually:</string>
+    <string name="readiness_pillar1_title">1. 🔔 Prayer Notification &amp; Screen Lock</string>
+    <string name="readiness_pillar1_desc">To show adhan screen and wake up display when time arrives</string>
+    <string name="readiness_pillar2_title">2. ⏱️ Exact Alarms (Zero Second)</string>
+    <string name="readiness_pillar2_desc">To trigger the adhan at the exact second without delay</string>
+    <string name="readiness_pillar3_title">3. 🔋 Battery Optimization Exemption</string>
+    <string name="readiness_pillar3_desc">Prevent Android from silencing or killing adhan in background</string>
+    <string name="readiness_pillar4_title">4. 🌙 DND / Silent Mode Override</string>
+    <string name="readiness_pillar4_desc">To hear Fajr adhan even if phone is on silent mode while sleeping</string>
+    <string name="readiness_status_granted">Granted &amp; Protected</string>
+    <string name="readiness_status_needed">Required</string>
+    <string name="readiness_status_optional">Optional &amp; Recommended</string>
+    <string name="readiness_fix_button">Enable / Fix</string>
+    <string name="readiness_device_detected_label">Detected Device Family:</string>
+    <string name="readiness_device_pixel_desc">For Pixel phones to avoid adaptive charging conflicts and persistent alarm icon</string>
+    <string name="readiness_device_xiaomi_desc">Enable Autostart to protect app from MIUI / HyperOS killing adhan</string>
+    <string name="readiness_device_samsung_desc">Add app to \'Never Sleeping Apps\' in Samsung One UI Device Care</string>
+    <string name="readiness_device_huawei_desc">Allow auto-launch and manual background management in EMUI</string>
+    <string name="readiness_device_oppo_desc">Allow background activity and prevent quick freeze in ColorOS / OxygenOS</string>
+    <string name="readiness_device_generic_desc">Your device uses standard Android behavior; the 4 pillars above are sufficient.</string>
+    <string name="readiness_toggle_off">Off [ OFF ]</string>
+    <string name="readiness_toggle_on">On [ ON ]</string>
+    <string name="readiness_score_format">%1$d%% Readiness</string>
+    <string name="calc_custom_angles_button">Customize calculation method and angles ▾</string>
+    <string name="calc_custom_angles_collapse">Hide calculation customization ▴</string>
+    <string name="calc_method_auto_selected">Auto-selected calculation method:</string>
+    <string name="dnd_override_short_title">4. 🌙 Override Do Not Disturb / Silent</string>
+    <string name="dnd_override_short_desc">To hear the dawn (Fajr) adhan even if your phone is silent while sleeping</string>
+    <string name="location_quick_cities">Quick suggestions:</string>
+    <!-- Settings menu sections -->
+    <string name="settings_section_prayer_times">Prayer &amp; Times</string>
+    <string name="settings_section_alerts">Alerts &amp; Reminders</string>
+    <string name="settings_section_appearance_tools">Appearance &amp; Tools</string>
+    <string name="settings_section_system">System &amp; Backup</string>
 
+    <!-- Category headers for Interface Settings -->
+    <string name="interface_category_theme">Theme &amp; Appearance</string>
+    <string name="interface_category_theme_desc">Theme colors, font scale and display sizing</string>
+    <string name="interface_category_language_time">Language, Numbers &amp; Time</string>
+    <string name="interface_category_language_time_desc">App language, digit system, and 24-hour format</string>
+    <string name="interface_category_prayers_countdown">Prayer Times &amp; Countdown</string>
+    <string name="interface_category_prayers_countdown_desc">Customize displayed prayers and next-time countdown</string>
+    <string name="interface_category_calendars_shortcuts">Calendars &amp; Shortcuts</string>
+    <string name="interface_category_calendars_shortcuts_desc">Lunar &amp; secondary calendars and top header shortcuts</string>
+
+    <!-- Home Shortcuts Enhancements -->
+    <string name="shortcut_counter_desc">Digital Tasbeeh &amp; Dhikr Counter</string>
+    <string name="shortcut_silence">Mosque Silent Mode</string>
+    <string name="shortcut_silence_desc">Mute phone and adhan during prayer time</string>
+    <string name="shortcut_theme_toggle">Quick Theme Toggle</string>
+    <string name="shortcut_theme_toggle_desc">Instant switch between light and dark themes</string>
+    <string name="shortcut_nateega">Nateega Widget Settings</string>
+    <string name="shortcut_nateega_desc">Customize Nateega widget and daily wisdoms</string>
+    <string name="shortcut_qibla_desc">Qibla direction compass</string>
+    <string name="shortcut_monthly_view_desc">Full monthly prayer times schedule</string>
+    <string name="shortcuts_selected_count">Selected %1$d of %2$d allowed</string>
+
+    <!-- Worship, Tasbih & Azkar (Hisn Al-Muslim) -->
+    <string name="settings_section_worship">Worship &amp; Azkar</string>
+    <string name="settings_tasbih_title">Electronic Tasbih</string>
+    <string name="settings_tasbih_subtitle">Open Tasbih with voice counting and smart counter</string>
+    <string name="settings_azkar_title">Azkar (Hisn Al-Muslim)</string>
+    <string name="settings_azkar_subtitle">Morning, evening &amp; authentic prophetic supplications</string>
+
+    <string name="azkar_title">Azkar</string>
+    <string name="azkar_subtitle">Fortress of the Muslim</string>
+    <string name="azkar_search_placeholder">Search categories, azkar, or sources…</string>
+    <string name="azkar_daily_shortcuts">Quick Daily Azkar</string>
+    <string name="azkar_all_categories">All Categories</string>
+    <string name="azkar_favorites_filter">Favorites</string>
+    <string name="azkar_all_filter">All</string>
+    <string name="azkar_no_results">No matching results found</string>
+    <string name="azkar_no_favorites">No favorite azkar yet</string>
+    <string name="azkar_dhikr_progress">Dhikr %1$d of %2$d</string>
+    <string name="azkar_previous">Previous</string>
+    <string name="azkar_next">Next</string>
+    <string name="azkar_remaining">Remaining</string>
+    <string name="azkar_completed">Completed</string>
+    <string name="azkar_repeat_count">%1$d times</string>
+    <string name="azkar_repeat_once">Once</string>
+    <string name="azkar_source_label">Source</string>
+    <string name="azkar_benefit_label">Virtue &amp; Benefit</string>
+    <string name="azkar_translation_label">Meaning</string>
+    <string name="azkar_copied_toast">Dhikr copied</string>
+    <string name="azkar_reset_dhikr">Reset</string>
+    <string name="azkar_copy_dhikr">Copy</string>
+    <string name="azkar_dhikr_count_format">%1$d azkar</string>
+    <string name="azkar_tap_to_count">Tap to count</string>
+
+    <string name="azkar_cat_morning">Morning Azkar</string>
+    <string name="azkar_cat_evening">Evening Azkar</string>
+    <string name="azkar_cat_sleep">Before Sleep</string>
+    <string name="azkar_cat_waking">Waking Up</string>
+    <string name="azkar_cat_prayer">Wudu &amp; Prayer</string>
+    <string name="azkar_cat_home_mosque">Home &amp; Mosque</string>
+    <string name="azkar_cat_travel">Travel &amp; Riding</string>
+    <string name="azkar_cat_distress">Distress &amp; Anxiety</string>
+    <string name="azkar_cat_istighfar">Istighfar &amp; Tasbih</string>
+    <string name="azkar_cat_food">Food &amp; Drink</string>
+
+    <string name="nav_tasbih">Tasbih</string>
+    <string name="settings_section_calendar_schedule">Calendar &amp; Monthly Schedule</string>
+    <string name="settings_calendar_title">Hijri &amp; Gregorian Calendar</string>
+    <string name="settings_calendar_subtitle">Browse Hijri dates, Islamic occasions, and daily prayer times</string>
+
+
+    <!-- Localized UI Strings (15 languages) -->
+    <string name="cal_corresponding_date">Corresponding to: %1$s</string>
+    <string name="cal_monthly_occasions_title">Occasions &amp; Fasting Days This Month</string>
+    <string name="cal_hide_list">Hide ▲</string>
+    <string name="cal_show_list">Show List (%1$d) ▼</string>
+    <string name="cal_select_day">Select</string>
+    <string name="surah_paper_warm">📜 Warm</string>
+    <string name="surah_paper_white">☀️ White</string>
+    <string name="surah_jumped_bookmark">Jumped to bookmark (Ayah %1$s)</string>
+    <string name="surah_return_bookmark_cd">Return to bookmark</string>
+    <string name="surah_ayah_short">Ayah %1$s</string>
+    <string name="surah_bookmark_at">Your bookmark is at Ayah (%1$s)</string>
+    <string name="surah_bookmark_hint">Tap any Ayah then press (Bookmark) to save your place</string>
+    <string name="surah_bookmark_banner">Last stopped at: Ayah (%1$s)</string>
+    <string name="surah_jumped_ayah">Moved to Ayah (%1$s)</string>
+    <string name="surah_continue_here">Continue here ↩</string>
+    <string name="surah_meta_ayahs">%1$s • %2$s Ayahs</string>
+    <string name="surah_order_num">Surah #%1$s</string>
+    <string name="surah_bookmark_removed">Bookmark removed</string>
+    <string name="surah_bookmark_saved">Bookmark saved at Ayah (%1$s)</string>
+    <string name="surah_remove_bookmark">Remove Bookmark</string>
+    <string name="surah_stopped_here">Bookmark Here</string>
+    <string name="surah_prev_place">Previous (%1$s)</string>
+    <string name="surah_copied_ayah">Ayah (%1$s) copied</string>
+    <string name="surah_copy">Copy</string>
+    <string name="surah_kahf_virtue">A light between the two Fridays</string>
+    <string name="surah_mulk_virtue">The protector from the punishment of the grave</string>
+    <string name="surah_footer_hint">Tap any Ayah to bookmark or copy it</string>
+    <string name="tasbih_mic_permission_toast">Please allow microphone permission for voice counting</string>
+    <string name="tasbih_floating_enabled">Floating Tasbih enabled</string>
+    <string name="tasbih_floating_disabled">Floating Tasbih closed</string>
+    <string name="tasbih_feedback_vibrate">Feedback: Vibrate only 📳</string>
+    <string name="tasbih_feedback_sound_vibrate">Feedback: Sound &amp; Vibrate 🔊</string>
+    <string name="tasbih_feedback_silent">Feedback: Silent 🔇</string>
+    <string name="tasbih_tap_anywhere">Tap anywhere to count</string>
+    <string name="tasbih_reset_title">Reset Counter</string>
+    <string name="tasbih_reset_confirm_msg">Reset only the current dhikr counter or reset the total count and all adhkar?</string>
+    <string name="tasbih_reset_current">Reset Current</string>
+    <string name="tasbih_reset_all">Reset All</string>
+    <string name="tasbih_custom_target_title">Edit Custom Target</string>
+    <string name="tasbih_custom_target_desc">Enter your custom target number to save it permanently:</string>
+    <string name="tasbih_target_hint">Target (e.g. 300)</string>
+    <string name="tasbih_save_activate">Save &amp; Activate</string>
+    <string name="tasbih_choose_dhikr">Choose Dhikr</string>
+    <string name="tasbih_delete_dhikr">Delete Dhikr</string>
+    <string name="tasbih_add_new_dhikr">Add New Dhikr (+)</string>
+    <string name="tasbih_add_custom_dhikr">Add Custom Dhikr</string>
+    <string name="tasbih_dhikr_text_label">Dhikr Text</string>
+    <string name="tasbih_target_label">Target</string>
+    <string name="tasbih_overlay_title">Floating Tasbih Permission</string>
+    <string name="tasbih_overlay_msg">To display the floating Tasbih bubble over other apps, please enable \'Display over other apps\' permission.</string>
+    <string name="tasbih_open_permission">Open Permission Settings</string>
+    <string name="tasbih_later">Later</string>
+    <string name="tasbih_voice_btn">Voice Tasbih</string>
+    <string name="tasbih_sensory_cd">Sensory Feedback</string>
+    <string name="tasbih_floating_cd">Floating Tasbih</string>
+    <string name="tasbih_settings_stats">Settings &amp; Statistics</string>
+    <string name="tasbih_custom_btn">Custom</string>
+    <string name="tasbih_total_label">Total:</string>
+    <string name="tasbih_cycle_label">Cycle: %1$s</string>
+    <string name="tasbih_reset_btn">Reset</string>
+    <string name="tasbih_reset_current_menu">Reset Current Counter</string>
+    <string name="tasbih_reset_total_menu">Reset Total Count</string>
+    <string name="tasbih_total_all_label">Total Tasbih Count</string>
+    <string name="tasbih_wird_title">Sequential Wird (33 - 33 - 34)</string>
+    <string name="tasbih_wird_subtitle">Auto-advances: SubhanAllah → Alhamdulillah → Allahu Akbar</string>
+    <string name="tasbih_volume_keys_title">Count with Volume Keys</string>
+    <string name="tasbih_volume_keys_subtitle">Use volume up/down buttons to increment Tasbih</string>
+    <string name="ws_title">Widgets Settings &amp; Customization</string>
+    <string name="ws_done">Done</string>
+    <string name="ws_cat_calendars">🗓️ Calendars &amp; Daily Almanac</string>
+    <string name="ws_cat_dials">⏱️ Dials &amp; Countdown Counters</string>
+    <string name="ws_cat_modern">✨ Modern &amp; Compact Styles</string>
+    <string name="ws_nateega_title">Daily Wall Calendar</string>
+    <string name="ws_nateega_sub">Classic paper calendar with Hijri, Gregorian, Coptic dates &amp; prayer times</string>
+    <string name="ws_desk_title">Advanced Desk Calendar</string>
+    <string name="ws_desk_sub">Full monthly grid with countdown and prayer times, adapts automatically to size</string>
+    <string name="ws_compact_title">Compact Prayer &amp; Dates</string>
+    <string name="ws_compact_sub">Compact prayer bar with dates, countdown &amp; daily wisdom</string>
+    <string name="ws_circle_title">Circular Next Prayer Dial</string>
+    <string name="ws_circle_sub">Circular progress ring with live countdown until Adhan</string>
+    <string name="ws_square_title">Square Next Prayer Card</string>
+    <string name="ws_square_sub">Sleek square card matching app icons with horizontal progress bar</string>
+    <string name="ws_slim_title">Modern Slim Bar</string>
+    <string name="ws_slim_sub">Single-row horizontal bar combining clock, dates &amp; next prayer</string>
+    <string name="ws_arch_title">Mosque Arch &amp; Domes</string>
+    <string name="ws_arch_sub">Traditional Islamic frame with Quranic Ayah &amp; 6 prayer times</string>
+    <string name="ws_pill_title">Smart Spiritual Pill</string>
+    <string name="ws_pill_sub">Compact pill showing current spiritual moment &amp; next prayer time</string>
+    <string name="ws_live_preview">Live Preview</string>
+    <string name="ws_theme_section">Widget Design &amp; Theme</string>
+    <string name="ws_clock_section">Digital Clock</string>
+    <string name="ws_clock_pos_label">Clock Position &amp; Size</string>
+    <string name="ws_clock_pos_placeholder">Choose clock position</string>
+    <string name="ws_clock_pos_desc">Choose between large centered clock, side clock next to day, or hidden</string>
+    <string name="ws_elements_section">Displayed Widget Elements</string>
+    <string name="ws_show_coptic_title">Show Coptic Date</string>
+    <string name="ws_show_coptic_sub">Show the Coptic date badge in the middle</string>
+    <string name="ws_show_countdown_title">Countdown &amp; Prayer Progress</string>
+    <string name="ws_show_countdown_sub">Show remaining time until next prayer with progress bar</string>
+    <string name="ws_show_wisdom_title">Daily Wisdom &amp; Quote</string>
+    <string name="ws_show_wisdom_sub">Show a daily renewing Islamic wisdom at the bottom of the widget</string>
+    <string name="ws_desk_cal_type_section">Calendar Type for Monthly Grid</string>
+    <string name="ws_desk_cal_type_label">Monthly Grid Calendar</string>
+    <string name="ws_desk_cal_type_placeholder">Select calendar type</string>
+    <string name="ws_desk_cal_type_desc">Choose Gregorian, Hijri, or Coptic for the monthly calendar matrix</string>
+    <string name="ws_desk_countdown_section">Adhan Countdown</string>
+    <string name="ws_desk_countdown_title">Show Countdown Strip</string>
+    <string name="ws_desk_countdown_sub">Show remaining time strip; hiding it gives more room for the calendar &amp; prayers</string>
+    <string name="ws_desk_highlight_section">Next Prayer Highlight</string>
+    <string name="ws_desk_highlight_title">Highlight Next Prayer</string>
+    <string name="ws_desk_highlight_sub">Highlight the upcoming prayer slot in emerald green</string>
+    <string name="ws_date_options_section">Date &amp; Calendar Options</string>
+    <string name="ws_displayed_calendar">Displayed Calendar</string>
+    <string name="ws_displayed_calendar_desc">Show both Hijri and Gregorian dates together, or only one of them</string>
+    <string name="ws_date_order_label">Date Order (Start / End)</string>
+    <string name="ws_date_order_placeholder">Choose order</string>
+    <string name="ws_date_order_desc">Choose which calendar appears first</string>
+    <string name="ws_slim_elements_section">Bar Elements</string>
+    <string name="ws_show_city_title">Show City Name</string>
+    <string name="ws_show_city_sub">Show city name below the clock; hiding it makes the clock larger and centered</string>
+    <string name="ws_about_widget">About This Widget</string>
+    <string name="ws_how_to_add">💡 To add: Long-press on your home screen, choose Widgets, and select this widget.</string>
+    <string name="nws_title">Persistent Notification Bar</string>
+    <string name="nws_sec1_prayer">1. Persistent Prayer Times Notification</string>
+    <string name="nws_enable_prayer_notif">Enable Prayer Times Notification</string>
+    <string name="nws_enable_prayer_notif_sub">Keep a prayer times notification active in the shade &amp; lock screen</string>
+    <string name="nws_choose_layout">Choose prayer times display layout:</string>
+    <string name="nws_layout_table">Prayer Table</string>
+    <string name="nws_layout_table_sub">All 6 daily prayer times</string>
+    <string name="nws_layout_compact">Compact Bar</string>
+    <string name="nws_layout_compact_sub">Next prayer &amp; Adhan time</string>
+    <string name="nws_countdown_title">Countdown to Next Prayer</string>
+    <string name="nws_countdown_sub">Show remaining time digits until the next prayer</string>
+    <string name="nws_sec2_capsule">2. Smart Spiritual Capsule (Companion Notification)</string>
+    <string name="nws_capsule_badge">Independent Companion</string>
+    <string name="nws_capsule_desc">Live spiritual guidance reminding you of the best worship for the current moment (Duha, Qiyam, Morning/Evening Adhkar, Friday hour).</string>
+    <string name="nws_enable_capsule">Enable Capsule in Notification Shade</string>
+    <string name="nws_enable_capsule_sub">Works independently alongside the prayer times notification</string>
+    <string name="nws_capsule_mode_label">Choose how the Spiritual Capsule works:</string>
+    <string name="nws_mode_smart_title">1. Smart Moments Engine</string>
+    <string name="nws_mode_smart_tag">Recommended</string>
+    <string name="nws_mode_smart_sub">Smart alerts that appear automatically during the 7 blessed worship windows:</string>
+    <string name="nws_mode_persistent_title">2. Persistent 24/7 Notification</string>
+    <string name="nws_mode_persistent_tag">24/7 Always On</string>
+    <string name="nws_mode_persistent_sub">Continuously displays the current worship guidance next to prayer times.</string>
+    <string name="nws_daily_dhikr_title">Daily Custom Dhikr Reminder</string>
+    <string name="nws_daily_dhikr_sub">Remind you daily at a chosen time with your preferred dhikr</string>
+    <string name="nws_daily_dhikr_header">Customize daily dhikr time &amp; text:</string>
+    <string name="nws_daily_time_label">Daily Reminder Time</string>
+    <string name="nws_daily_time_placeholder">Choose reminder time</string>
+    <string name="nws_daily_text_label">Dhikr or Wird Text</string>
+    <string name="nws_daily_text_placeholder">Enter dhikr or dua text...</string>
+    <string name="nws_quick_suggestions">Quick prophetic dhikr suggestions:</string>
+    <string name="nws_capsule_preview">Live preview of the capsule design:</string>
+    <string name="nws_sec3_battery">3. Background Stability &amp; Battery Exemption</string>
+    <string name="nws_battery_title">Background Notification Stability</string>
+    <string name="nws_battery_protected">Protected &amp; Stable</string>
+    <string name="nws_battery_at_risk">May Be Stopped</string>
+    <string name="nws_battery_protected_desc">App is exempt from battery restrictions; prayer times &amp; capsule will update reliably.</string>
+    <string name="nws_battery_risk_desc">Android may pause notification updates to save battery. Tap below to exempt the app.</string>
+    <string name="nws_battery_exempt_btn">Exempt from Battery Optimization</string>
+    <string name="nws_battery_settings_btn">Open System Battery Settings</string>
+    <string name="nws_autostart_btn">⚙️ Device Auto-Start Settings</string>
+
+    <!-- Localized UI Strings (15 languages) -->
+    <string name="tasbih_save">Save</string>
 </resources>

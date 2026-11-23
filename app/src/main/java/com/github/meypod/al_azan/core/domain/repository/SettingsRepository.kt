@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.Flow
 interface SettingsRepository {
     val data: Flow<Settings>
 
+    fun getLatest(): Settings = (data as? kotlinx.coroutines.flow.StateFlow<Settings>)?.value
+        ?: throw IllegalStateException("Settings not ready")
+
     suspend fun fetch(): Settings
 
     suspend fun update(transform: (t: Settings) -> Settings)

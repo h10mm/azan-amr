@@ -3,10 +3,12 @@ package com.github.meypod.al_azan.di
 import android.util.Log
 import com.github.meypod.al_azan.R
 import com.github.meypod.al_azan.core.domain.model.TextResource
+import com.github.meypod.al_azan.core.domain.model.calculation.withEgyptianFixApplied
 import com.github.meypod.al_azan.core.domain.model.notification.AndroidNotificationCategory
 import com.github.meypod.al_azan.core.domain.model.notification.AndroidNotificationConfig
 import com.github.meypod.al_azan.core.domain.model.notification.NotificationConfig
 import com.github.meypod.al_azan.core.domain.model.notification.NotificationPressAction
+import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.NotificationRepository
 import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
 import com.github.meypod.al_azan.core.domain.usecase.EnsureNotificationChannelsUseCase
@@ -75,6 +77,7 @@ constructor(
 class DiyanetFixInitializer @Inject constructor(
     private val diyanetParamsMigrationRunner: DiyanetParamsMigrationRunner,
     private val diyanetChangeNoticePoster: DiyanetChangeNoticePoster,
+    private val calculationSettingsRepository: CalculationSettingsRepository,
 ) {
     private companion object {
         const val TAG = "DiyanetFixInitializer"
@@ -89,8 +92,11 @@ class DiyanetFixInitializer @Inject constructor(
     fun start() {
         if (!started.compareAndSet(expectedValue = false, newValue = true)) return
         scope.launch {
-            runCatching { diyanetParamsMigrationRunner.run() }
-                .onFailure { Log.e(TAG, "Diyanet fix failed. Will retry on next launch.", it) }
+            runCatching {
+                diyanetParamsMigrationRunner.run()
+                calculationSettingsRepository.update { it.withEgyptianFixApplied() }
+            }
+                .onFailure { Log.e(TAG, "Diyanet/Egyptian fix failed. Will retry on next launch.", it) }
             diyanetChangeNoticePoster.postIfPending()
         }
     }

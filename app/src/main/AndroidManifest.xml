@@ -21,10 +21,6 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- need background access on Android 10+ for traveling mode -->
-    <uses-permission
-        android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
-        tools:ignore="BackgroundLocationPolicy" />
     <!-- For Xiaomi devices to enable heads-up notifications as default (https://github.com/invertase/notifee/issues/296) -->
     <uses-permission
         android:name="android.permission.ACCESS_NOTIFICATION_POLICY"
@@ -35,9 +31,13 @@
     <!-- To detect incoming and active calls to not play sound -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
-    <!-- Foreground service for previewing adhan audio -->
+    <!-- Voice Tasbih counting via SpeechRecognizer -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Foreground service for previewing adhan audio & floating Tasbih bubble -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- this removes ACCESS_NETWORK_STATE permission added by work manager:  -->
     <uses-permission
@@ -53,7 +53,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.App.Starting">
+        android:theme="@style/Theme.App.Starting"
+        android:usesCleartextTraffic="false">
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -73,6 +74,16 @@
             android:showWhenLocked="true"
             android:theme="@style/Theme.AlAzan"
             android:turnScreenOn="true" />
+
+        <!-- Unified home screen widget configuration activity -->
+        <activity
+            android:name=".widget.WidgetConfigureActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AlAzan">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
 
         <receiver
             android:name=".BootReceiver"
@@ -119,6 +130,7 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="com.github.meypod.al_azan.action.CANCEL_ADHAN" />
+                <action android:name="com.github.meypod.al_azan.action.STOP_ADHAN_SOUND" />
                 <action android:name="com.github.meypod.al_azan.action.UNSILENCE" />
                 <action android:name="com.github.meypod.al_azan.action.CANCEL_REMINDER" />
                 <action android:name="com.github.meypod.al_azan.action.STOP_SOFT_SOUND" />
@@ -133,40 +145,123 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
-        <!-- Home-screen prayer-times app widget. -->
+        <!-- Floating draggable Tasbih bubble overlay foreground service -->
+        <service
+            android:name=".main.tasbih.FloatingTasbihService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating Tasbih counter bubble overlay" />
+        </service>
+
+
+
+
+
+
+
+        <!-- Dedicated circular next-prayer dial widget (قرص مواقيت الصلاة القادمة مع العداد الدائري) -->
         <receiver
-            android:name=".widget.PrayerTimesWidget"
+            android:name=".widget.NextPrayerCircleWidget"
+            android:label="قرص الصلاة القادمة (عداد دائري)"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/prayer_times_widget_info" />
+                android:resource="@xml/next_prayer_circle_widget_info" />
         </receiver>
 
-        <!-- 1x1 next-prayer app widget: prayer name + countdown chronometer. -->
+        <!-- Dedicated square next-prayer widget (بطاقة الصلاة القادمة المربعة مع العداد) -->
         <receiver
-            android:name=".widget.NextPrayerWidget"
+            android:name=".widget.NextPrayerSquareWidget"
+            android:label="مواقيت الصلاة القادمة (مربع 2×2)"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/next_prayer_widget_info" />
+                android:resource="@xml/next_prayer_square_widget_info" />
         </receiver>
 
-        <!-- User-authored custom widget: layout/colors composed in the in-app builder. -->
+        <!-- 1. Ultra-slim Header Bar (الشريط المودرن النحيف 4×1) -->
         <receiver
-            android:name=".widget.CustomWidget"
+            android:name=".widget.SlimBarWidget"
+            android:label="الشريط المودرن النحيف (4×1)"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/custom_widget_info" />
+                android:resource="@xml/slim_bar_widget_info" />
+        </receiver>
+
+        <!-- 2. Mosque Arch & Silhouette (محراب المسجد والقباب 4×2) -->
+        <receiver
+            android:name=".widget.MosqueArchWidget"
+            android:label="محراب المسجد والقباب (4×2)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/mosque_arch_widget_info" />
+        </receiver>
+
+        <!-- 3. Dynamic Smart Pill (الكبسولة الذكية للمواقيت 2×1) -->
+        <receiver
+            android:name=".widget.SmartPillWidget"
+            android:label="الكبسولة الذكية للمواقيت (2×1)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/smart_pill_widget_info" />
+        </receiver>
+
+        <!-- 4. Desk Calendar (التقويم المكتبي المتطور - يتكيف تلقائياً بين الأفقي والمربع) -->
+        <receiver
+            android:name=".widget.DeskCalendarWidget"
+            android:label="التقويم المكتبي المتطور"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/desk_calendar_widget_info" />
+        </receiver>
+        <!-- Daily Wall Calendar (رزمانة الحائط اليومية) -->
+        <receiver
+            android:name=".widget.NateegaWidget"
+            android:label="رزمانة الحائط اليومية"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/nateega_widget_info" />
+        </receiver>
+
+        <!-- Compact Prayer & Dates Widget (المواقيت والتقويم المدمج) -->
+        <receiver
+            android:name=".widget.CompactPrayerWidget"
+            android:label="المواقيت والتقويم المدمج"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/compact_prayer_widget_info" />
         </receiver>
 
         <service

@@ -1,25 +1,29 @@
 package com.github.meypod.al_azan.main.settings.appearance
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,15 +35,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.meypod.al_azan.R
@@ -48,16 +50,15 @@ import com.github.meypod.al_azan.core.domain.model.settings.NumberingSystem
 import com.github.meypod.al_azan.core.domain.model.settings.SecondaryCalendar
 import com.github.meypod.al_azan.core.domain.model.settings.SupportedLocales
 import com.github.meypod.al_azan.core.domain.model.settings.ThemeColor
+import com.github.meypod.al_azan.core.domain.model.settings.description
 import com.github.meypod.al_azan.core.domain.model.settings.i18n
+import com.github.meypod.al_azan.core.domain.model.settings.maxHomeShortcuts
 import com.github.meypod.al_azan.core.domain.util.formatWithUnicodeDigits
 import com.github.meypod.al_azan.core.domain.util.localeFirstDayOfWeek
 import com.github.meypod.al_azan.core.domain.util.weekdaysFrom
 import com.github.meypod.al_azan.core.presentation.AlAzanThemePreview
-import com.github.meypod.al_azan.core.presentation.DarkSurface
-import com.github.meypod.al_azan.core.presentation.LightSecondaryContainer
 import com.github.meypod.al_azan.core.presentation.components.ACard
 import com.github.meypod.al_azan.core.presentation.components.BottomSelect
-import com.github.meypod.al_azan.core.presentation.components.CheckboxTable
 import com.github.meypod.al_azan.core.presentation.components.LocalSnackbarController
 import com.github.meypod.al_azan.core.presentation.components.PrayerCheckboxTable
 import com.github.meypod.al_azan.core.presentation.components.ScreenScaffold
@@ -96,67 +97,156 @@ fun InterfaceSettingsScreen(
         onBackClick = { NavigationController.navigateBack() },
         modifier = modifier,
     ) {
-        LanguageCard(uiState, onAction)
-        DisplaySizeCard(uiState, onAction)
-        ThemesCard(uiState, onAction)
-        PrayerVisibilityCard(uiState, onAction)
-        CountdownCard(uiState, onAction)
-        HighlightCurrentPrayerCard(uiState, onAction)
-        TimeFormatCard(uiState, onAction)
-        NumberingSystemCard(uiState, onAction)
-        CalendarsCard(uiState, onAction)
-        CalendarDisplayCard(uiState, onAction)
-        HomeShortcutsCard(uiState, onAction)
+        // القسم الأول: المظهر والسمة
+        SectionCategoryHeader(title = stringResource(R.string.interface_category_theme))
+        ThemeAndDisplayCard(uiState, onAction)
+
+        // القسم الثاني: اللغة والأرقام والوقت
+        SectionCategoryHeader(title = stringResource(R.string.interface_category_language_time))
+        LanguageAndTimeCard(uiState, onAction)
+
+        // القسم الثالث: أوقات الصلاة والعد التنازلي
+        SectionCategoryHeader(title = stringResource(R.string.interface_category_prayers_countdown))
+        PrayersAndCountdownCard(uiState, onAction)
+
+        // القسم الرابع: التقاويم واختصارات الشاشة
+        SectionCategoryHeader(title = stringResource(R.string.interface_category_calendars_shortcuts))
+        CalendarsAndShortcutsCard(uiState, onAction)
     }
+}
+
+@Composable
+private fun SectionCategoryHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+    )
 }
 
 private const val DisplayScaleMin = 0.6f
 private const val DisplayScaleMax = 1.5f
-
-// Discrete ticks between the ends, giving 0.1 increments across [0.6, 1.5].
-// 100% lands on the fifth tick — two notches right of where it sat with min 0.8.
 private const val DisplayScaleSteps = 8
 private const val DisplayScaleStep = 0.1f
 
-// Snap to the nearest 0.1 tick and clamp, so the +/- steppers stay aligned with the slider notches.
 private fun snapDisplayScale(value: Float): Float = ((value * 10).roundToInt() / 10f).coerceIn(DisplayScaleMin, DisplayScaleMax)
 
+/** البطاقة الأولى: المظهر وحجم العرض مع شريط كبسولات السمة الفوري (1-Tap) */
 @Composable
-private fun DisplaySizeCard(
+private fun ThemeAndDisplayCard(
     uiState: InterfaceSettingsUiState,
     onAction: (InterfaceSettingsUiAction) -> Unit,
 ) {
     val savedDisplayScale = uiState.settings.displayScale
-    // Track the knob locally while dragging; only commit (apply + persist) on release, like the
-    // system Display-size slider. Re-keyed on the saved value so external changes (reset, sync) resync.
     var sliderValue by remember(savedDisplayScale) { mutableFloatStateOf(savedDisplayScale) }
+
     ACard { cardPadding ->
         Column(
-            Modifier.padding(cardPadding),
+            modifier = Modifier.padding(cardPadding),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
         ) {
+            // عنوان السمة
+            SettingLabel(
+                text = stringResource(R.string.themes),
+                fontWeight = FontWeight.SemiBold,
+            )
+
+            // شريط الكبسولات المقسمة الثلاث بنقرة واحدة سريعة (1-Tap)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                val themeItems = listOf(
+                    Triple(ThemeColor.ClassicLight, "فاتح", Color.White),
+                    Triple(ThemeColor.Dark, "داكن", Color(0xFF141414)),
+                    Triple(ThemeColor.MidnightBlue, "أزرق كحلي", Color(0xFF070D1E)),
+                )
+
+                themeItems.forEach { (theme, label, previewColor) ->
+                    val isSelected = uiState.settings.themeColor == theme
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                else Color.Transparent
+                            )
+                            .clickable { onAction(InterfaceSettingsUiAction.OnThemeChange(theme)) }
+                            .padding(horizontal = 6.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .clip(CircleShape)
+                                    .background(previewColor)
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                        CircleShape
+                                    )
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                       else MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                }
+            }
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 0.8.dp,
+            )
+
+            // حجم العرض وتكبير الخط
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(Modifier.weight(1f)) {
-                    SettingHeader(
-                        stringResource(R.string.display_size),
-                        stringResource(R.string.display_size_help),
-                    )
-                }
+                SettingLabel(
+                    text = stringResource(R.string.display_size),
+                    fontWeight = FontWeight.SemiBold,
+                )
                 Text(
-                    "${(sliderValue * 100).roundToInt()}%",
+                    text = "${(sliderValue * 100).roundToInt()}%",
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
-            // Tapping +/- commits immediately (apply + persist), like the system Display-size steppers.
+
             val commit = { value: Float ->
                 val snapped = snapDisplayScale(value)
                 sliderValue = snapped
                 onAction(InterfaceSettingsUiAction.OnDisplayScaleChange(snapped))
             }
+
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -188,33 +278,39 @@ private fun DisplaySizeCard(
                     )
                 }
             }
-            // Always present (avoids layout jumping as it appears/disappears); disabled at 100%.
-            // Floating-point ticks never land exactly on 1f, so compare with a tolerance.
-            TextButton(
-                onClick = {
-                    sliderValue = 1f
-                    onAction(InterfaceSettingsUiAction.OnDisplayScaleChange(1f))
-                },
-                enabled = abs(sliderValue - 1f) > 0.001f,
-                modifier = Modifier.align(Alignment.End),
-            ) {
-                Text(stringResource(R.string.reset))
+
+            if (abs(sliderValue - 1f) > 0.001f) {
+                TextButton(
+                    onClick = {
+                        sliderValue = 1f
+                        onAction(InterfaceSettingsUiAction.OnDisplayScaleChange(1f))
+                    },
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text(stringResource(R.string.reset))
+                }
             }
         }
     }
 }
 
+/** البطاقة الثانية: اللغة، نظام الأرقام، وتنسيق الوقت مدمجة في مكان واحد وبنصوص مقتضبة */
 @Composable
-private fun LanguageCard(
+private fun LanguageAndTimeCard(
     uiState: InterfaceSettingsUiState,
     onAction: (InterfaceSettingsUiAction) -> Unit,
 ) {
+    val resources = LocalResources.current
     ACard { cardPadding ->
         Column(
-            Modifier.padding(cardPadding),
+            modifier = Modifier.padding(cardPadding),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
         ) {
-            SettingLabel(stringResource(R.string.language), fontWeight = FontWeight.Medium)
+            // لغة الواجهة
+            SettingLabel(
+                text = stringResource(R.string.language),
+                fontWeight = FontWeight.SemiBold,
+            )
             BottomSelect(
                 modifier = Modifier.fillMaxWidth(),
                 options = SupportedLocales,
@@ -225,124 +321,40 @@ private fun LanguageCard(
                 onSelect = { onAction(InterfaceSettingsUiAction.OnLanguageChange(it.value)) },
                 searchable = true,
             )
-        }
-    }
-}
 
-@Composable
-private fun ThemesCard(
-    uiState: InterfaceSettingsUiState,
-    onAction: (InterfaceSettingsUiAction) -> Unit,
-) {
-    ACard { cardPadding ->
-        Column(
-            Modifier.padding(cardPadding),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-        ) {
-            SettingLabel(stringResource(R.string.themes), fontWeight = FontWeight.Medium)
-            ThemeGrid(uiState.settings.themeColor) { theme ->
-                onAction(InterfaceSettingsUiAction.OnThemeChange(theme))
-            }
-        }
-    }
-}
-
-@Composable
-private fun PrayerVisibilityCard(
-    uiState: InterfaceSettingsUiState,
-    onAction: (InterfaceSettingsUiAction) -> Unit,
-) {
-    ACard { cardPadding ->
-        PrayerCheckboxTable(
-            title = stringResource(R.string.show_prayer_times_title),
-            helpText = stringResource(R.string.show_prayer_times_help),
-            leftColumn = stringResource(R.string.time_column),
-            rightColumn = stringResource(R.string.show_column),
-            isChecked = { it !in uiState.settings.hiddenPrayers },
-            onToggle = { prayer, visible ->
-                onAction(InterfaceSettingsUiAction.OnPrayerVisibilityChange(prayer, visible))
-            },
-            modifier = Modifier.padding(cardPadding),
-        )
-    }
-}
-
-@Composable
-private fun CountdownCard(
-    uiState: InterfaceSettingsUiState,
-    onAction: (InterfaceSettingsUiAction) -> Unit,
-) {
-    ACard { cardPadding ->
-        Column(
-            Modifier.padding(cardPadding),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-        ) {
-            SettingSwitch(
-                title = stringResource(R.string.countdown_timer),
-                subtitle = stringResource(R.string.countdown_timer_help),
-                checked = uiState.settings.showHomeNextPrayerCountdown,
-                onCheckedChange = { onAction(InterfaceSettingsUiAction.OnCountdownTimerToggle(it)) },
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 0.8.dp,
             )
-            SettingSwitch(
-                title = stringResource(R.string.countdown_skip_non_prayers),
-                subtitle = stringResource(R.string.countdown_skip_non_prayers_help),
-                checked = uiState.settings.countdownSkipNonPrayers,
-                enabled = uiState.settings.showHomeNextPrayerCountdown,
-                onCheckedChange = { onAction(InterfaceSettingsUiAction.OnCountdownSkipNonPrayersToggle(it)) },
+
+            // نظام الأرقام
+            SettingLabel(
+                text = stringResource(R.string.numbering_system),
+                fontWeight = FontWeight.SemiBold,
             )
-        }
-    }
-}
-
-@Composable
-private fun HighlightCurrentPrayerCard(
-    uiState: InterfaceSettingsUiState,
-    onAction: (InterfaceSettingsUiAction) -> Unit,
-) {
-    ACard { cardPadding ->
-        Column(Modifier.padding(cardPadding)) {
-            SettingSwitch(
-                title = stringResource(R.string.highlight_current_prayer_time),
-                subtitle = stringResource(R.string.highlight_current_prayer_time_help),
-                checked = uiState.settings.highlightCurrentPrayer,
-                onCheckedChange = { onAction(InterfaceSettingsUiAction.OnHighlightCurrentPrayerToggle(it)) },
+            BottomSelect(
+                modifier = Modifier.fillMaxWidth(),
+                options = NumberingSystem.entries,
+                optionKey = { it.name },
+                optionLabel = {
+                    val label = when (it) {
+                        NumberingSystem.Default -> resources.getString(R.string.default_value)
+                        NumberingSystem.Latn -> resources.getString(R.string.numbering_system_latn)
+                        NumberingSystem.Arab -> resources.getString(R.string.numbering_system_arab)
+                        NumberingSystem.Arabext -> resources.getString(R.string.numbering_system_arabext)
+                    }
+                    if (it == NumberingSystem.Default) label else "$label (${formatWithUnicodeDigits("456", it)})"
+                },
+                selectedKey = uiState.settings.numberingSystem.name,
+                onSelect = { onAction(InterfaceSettingsUiAction.OnNumberingSystemChange(it)) },
             )
-        }
-    }
-}
 
-@Composable
-private fun HomeShortcutsCard(
-    uiState: InterfaceSettingsUiState,
-    onAction: (InterfaceSettingsUiAction) -> Unit,
-) {
-    val selected = uiState.settings.homeShortcuts
-    ACard { cardPadding ->
-        CheckboxTable(
-            title = stringResource(R.string.home_shortcuts),
-            helpText = stringResource(R.string.home_shortcuts_help),
-            leftColumn = stringResource(R.string.shortcut_column),
-            rightColumn = stringResource(R.string.show_column),
-            items = HOME_SHORTCUTS_IN_ORDER,
-            label = { it.i18n() },
-            isChecked = { it in selected },
-            onToggle = { shortcut, enabled ->
-                onAction(InterfaceSettingsUiAction.OnHomeShortcutToggle(shortcut, enabled))
-            },
-            modifier = Modifier.padding(cardPadding),
-        )
-    }
-}
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 0.8.dp,
+            )
 
-@Composable
-private fun TimeFormatCard(
-    uiState: InterfaceSettingsUiState,
-    onAction: (InterfaceSettingsUiAction) -> Unit,
-) {
-    ACard { cardPadding ->
-        Column(
-            Modifier.padding(cardPadding),
-        ) {
+            // تنسيق 24 ساعة
             SettingSwitch(
                 title = stringResource(R.string.use_24_hour_format),
                 subtitle = null,
@@ -353,62 +365,127 @@ private fun TimeFormatCard(
     }
 }
 
+/** البطاقة الثالثة: أوقات الصلاة والعد التنازلي مدمجة معاً */
 @Composable
-private fun NumberingSystemCard(
+private fun PrayersAndCountdownCard(
     uiState: InterfaceSettingsUiState,
     onAction: (InterfaceSettingsUiAction) -> Unit,
 ) {
-    val resources = LocalResources.current
     ACard { cardPadding ->
         Column(
-            Modifier.padding(cardPadding),
+            modifier = Modifier.padding(cardPadding),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
         ) {
-            SettingHeader(
-                stringResource(R.string.numbering_system),
-                stringResource(R.string.numbering_system_help),
+            // مؤقت العد التنازلي
+            SettingSwitch(
+                title = stringResource(R.string.countdown_timer),
+                subtitle = stringResource(R.string.countdown_timer_help),
+                checked = uiState.settings.showHomeNextPrayerCountdown,
+                onCheckedChange = { onAction(InterfaceSettingsUiAction.OnCountdownTimerToggle(it)) },
             )
-            BottomSelect(
-                modifier = Modifier.fillMaxWidth(),
-                options = NumberingSystem.entries,
-                optionKey = { it.name },
-                optionLabel = {
-                    val label =
-                        when (it) {
-                            NumberingSystem.Default -> resources.getString(R.string.default_value)
-                            NumberingSystem.Latn -> resources.getString(R.string.numbering_system_latn)
-                            NumberingSystem.Arab -> resources.getString(R.string.numbering_system_arab)
-                            NumberingSystem.Arabext -> resources.getString(R.string.numbering_system_arabext)
-                        }
-                    // 4,5,6 are the only digits that differ between Eastern Arabic and Persian,
-                    // so the preview must show them to be useful.
-                    if (it == NumberingSystem.Default) {
-                        label
-                    } else {
-                        "$label (${formatWithUnicodeDigits("456", it)})"
-                    }
+
+            // العد للصلوات فقط
+            SettingSwitch(
+                title = stringResource(R.string.countdown_skip_non_prayers),
+                subtitle = stringResource(R.string.countdown_skip_non_prayers_help),
+                checked = uiState.settings.countdownSkipNonPrayers,
+                enabled = uiState.settings.showHomeNextPrayerCountdown,
+                onCheckedChange = { onAction(InterfaceSettingsUiAction.OnCountdownSkipNonPrayersToggle(it)) },
+            )
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 0.8.dp,
+            )
+
+            // إبراز وقت الصلاة الحالي
+            SettingSwitch(
+                title = stringResource(R.string.highlight_current_prayer_time),
+                subtitle = stringResource(R.string.highlight_current_prayer_time_help),
+                checked = uiState.settings.highlightCurrentPrayer,
+                onCheckedChange = { onAction(InterfaceSettingsUiAction.OnHighlightCurrentPrayerToggle(it)) },
+            )
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 0.8.dp,
+            )
+
+            // عرض أوقات الصلاة
+            PrayerCheckboxTable(
+                title = stringResource(R.string.show_prayer_times_title),
+                helpText = stringResource(R.string.show_prayer_times_help),
+                leftColumn = stringResource(R.string.time_column),
+                rightColumn = stringResource(R.string.show_column),
+                isChecked = { it !in uiState.settings.hiddenPrayers },
+                onToggle = { prayer, visible ->
+                    onAction(InterfaceSettingsUiAction.OnPrayerVisibilityChange(prayer, visible))
                 },
-                selectedKey = uiState.settings.numberingSystem.name,
-                onSelect = { onAction(InterfaceSettingsUiAction.OnNumberingSystemChange(it)) },
             )
         }
     }
 }
 
+/** البطاقة الرابعة: التقاويم واختصارات الشاشة الرئيسية مدمجة معاً */
 @Composable
-private fun CalendarsCard(
+private fun CalendarsAndShortcutsCard(
     uiState: InterfaceSettingsUiState,
     onAction: (InterfaceSettingsUiAction) -> Unit,
 ) {
     val resources = LocalResources.current
+    val selected = uiState.settings.homeShortcuts.filter { it in HOME_SHORTCUTS_IN_ORDER }
+    val maxAllowed = maxHomeShortcuts(uiState.settings.hideToolbarCalendar)
+
     ACard { cardPadding ->
         Column(
-            Modifier.padding(cardPadding),
+            modifier = Modifier.padding(cardPadding),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
         ) {
+            // التقويم الثانوي
             SettingHeader(
-                stringResource(R.string.lunar_calendar_language),
-                stringResource(R.string.lunar_calendar_language_help),
+                title = stringResource(R.string.secondary_calendar),
+                subtitle = stringResource(R.string.secondary_calendar_help),
+            )
+            BottomSelect(
+                modifier = Modifier.fillMaxWidth(),
+                options = SecondaryCalendar.entries,
+                optionKey = { it.name },
+                optionLabel = { resources.getString(it.stringRes()) },
+                selectedKey = uiState.settings.selectedSecondaryCalendar.name,
+                onSelect = { onAction(InterfaceSettingsUiAction.OnSecondaryCalendarChange(it)) },
+            )
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 0.8.dp,
+            )
+
+            // أول يوم في الأسبوع
+            SettingHeader(
+                title = stringResource(R.string.first_day_of_week),
+                subtitle = stringResource(R.string.first_day_of_week_help),
+            )
+            val localeFirstDay = localeFirstDayOfWeek(uiState.settings.selectedLocale)
+            val defaultFirstDayLabel = stringResource(R.string.default_with_value, localeFirstDay.localized())
+            val weekdayLabels = DayOfWeek.entries.associateWith { resources.getString(it.stringRes()) }
+            BottomSelect(
+                modifier = Modifier.fillMaxWidth(),
+                options = listOf<DayOfWeek?>(null) + weekdaysFrom(localeFirstDay),
+                optionKey = { it?.name ?: "default" },
+                optionLabel = { it?.let(weekdayLabels::getValue) ?: defaultFirstDayLabel },
+                selectedKey = uiState.settings.firstDayOfWeek?.name ?: "default",
+                onSelect = { onAction(InterfaceSettingsUiAction.OnFirstDayOfWeekChange(it)) },
+            )
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 0.8.dp,
+            )
+
+            // لغة التقويم القمري
+            SettingHeader(
+                title = stringResource(R.string.lunar_calendar_language),
+                subtitle = stringResource(R.string.lunar_calendar_language_help),
             )
             val langOptions = listOf<Pair<String?, String>>(
                 null to stringResource(R.string.default_value),
@@ -423,143 +500,91 @@ private fun CalendarsCard(
                 searchable = true,
             )
 
-            SettingHeader(
-                stringResource(R.string.secondary_calendar),
-                stringResource(R.string.secondary_calendar_help),
-            )
-            BottomSelect(
-                modifier = Modifier.fillMaxWidth(),
-                options = SecondaryCalendar.entries,
-                optionKey = { it.name },
-                optionLabel = { resources.getString(it.stringRes()) },
-                selectedKey = uiState.settings.selectedSecondaryCalendar.name,
-                onSelect = { onAction(InterfaceSettingsUiAction.OnSecondaryCalendarChange(it)) },
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 0.8.dp,
             )
 
-            SettingHeader(
-                stringResource(R.string.first_day_of_week),
-                stringResource(R.string.first_day_of_week_help),
-            )
-            val localeFirstDay = localeFirstDayOfWeek(uiState.settings.selectedLocale)
-            val defaultFirstDayLabel = stringResource(R.string.default_with_value, localeFirstDay.localized())
-            val weekdayLabels = DayOfWeek.entries.associateWith { resources.getString(it.stringRes()) }
-            BottomSelect(
-                modifier = Modifier.fillMaxWidth(),
-                options = listOf<DayOfWeek?>(null) + weekdaysFrom(localeFirstDay),
-                optionKey = { it?.name ?: "default" },
-                optionLabel = { it?.let(weekdayLabels::getValue) ?: defaultFirstDayLabel },
-                selectedKey = uiState.settings.firstDayOfWeek?.name ?: "default",
-                onSelect = { onAction(InterfaceSettingsUiAction.OnFirstDayOfWeekChange(it)) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun CalendarDisplayCard(
-    uiState: InterfaceSettingsUiState,
-    onAction: (InterfaceSettingsUiAction) -> Unit,
-) {
-    ACard { cardPadding ->
-        Column(
-            Modifier.padding(cardPadding),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-        ) {
-            SettingSwitch(
-                title = stringResource(R.string.hide_toolbar_calendar),
-                subtitle = stringResource(R.string.hide_toolbar_calendar_help),
-                checked = uiState.settings.hideToolbarCalendar,
-                onCheckedChange = { onAction(InterfaceSettingsUiAction.OnHideToolbarCalendarToggle(it)) },
-            )
+            // تبديل التقويم القمري والثانوي في الرأس
             SettingSwitch(
                 title = stringResource(R.string.swap_home_calendars),
                 subtitle = stringResource(R.string.swap_home_calendars_help),
                 checked = uiState.settings.swapHomeCalendars,
                 onCheckedChange = { onAction(InterfaceSettingsUiAction.OnSwapHomeCalendarsToggle(it)) },
             )
-        }
-    }
-}
 
-@Composable
-private fun ThemeGrid(
-    selected: ThemeColor,
-    onSelect: (ThemeColor) -> Unit,
-) {
-    val themeEntries = listOf(
-        ThemeColor.Default to Triple(R.string.theme_system_default, Color.Transparent, false),
-        ThemeColor.Light to Triple(R.string.theme_light, LightSecondaryContainer, false),
-        ThemeColor.Dark to Triple(R.string.theme_dark, DarkSurface, false),
-        ThemeColor.ClassicDark to Triple(R.string.theme_classic_black, Color.Black, false),
-        ThemeColor.ClassicLight to Triple(R.string.theme_classic_light, Color.White, false),
-        ThemeColor.Dynamic to Triple(R.string.theme_dynamic, Color(0xFFB3A3F5), false),
-    )
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 0.8.dp,
+            )
 
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-    ) {
-        themeEntries.forEach { (theme, meta) ->
-            val isSelected = selected == theme
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier
-                    .width(106.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
-                        MaterialTheme.shapes.medium,
+            // اختصارات الرأس العلوي (البند 11 المطور)
+            SettingHeader(
+                title = stringResource(R.string.home_shortcuts),
+                subtitle = stringResource(R.string.shortcuts_selected_count, selected.size, maxAllowed),
+            )
+
+            HOME_SHORTCUTS_IN_ORDER.forEachIndexed { index, shortcut ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+                        thickness = 0.8.dp,
                     )
-                    .selectable(
-                        selected = isSelected,
-                        role = Role.RadioButton,
-                        onClick = { onSelect(theme) },
-                    )
-                    .padding(4.dp),
-            ) {
-                Box(
-                    Modifier
+                }
+                val isChecked = shortcut in selected
+                Row(
+                    modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(MaterialTheme.shapes.medium)
-                        .then(
-                            if (theme == ThemeColor.Default) {
-                                Modifier.drawBehind {
-                                    drawRect(DarkSurface)
-                                    val path = Path().apply {
-                                        moveTo(size.width, 0f)
-                                        lineTo(size.width, size.height)
-                                        lineTo(0f, size.height)
-                                        close()
-                                    }
-                                    drawPath(path, LightSecondaryContainer)
-                                }
-                            } else {
-                                Modifier.background(meta.second)
-                            },
-                        )
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium),
-                )
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    RadioButton(isSelected, onClick = null, modifier = Modifier.size(20.dp))
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable {
+                            onAction(InterfaceSettingsUiAction.OnHomeShortcutToggle(shortcut, !isChecked))
+                        }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     Box(
                         modifier = Modifier
-                            .padding(start = dimensionResource((R.dimen.element_padding))),
-                        contentAlignment = Alignment.CenterStart,
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isChecked) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                            ),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            "", // for reserving space
-                            style = MaterialTheme.typography.bodySmall,
-                            minLines = 2,
-                        )
-                        Text(
-                            stringResource(meta.first),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.width(IntrinsicSize.Min),
+                        Icon(
+                            painter = painterResource(shortcut.iconRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = if (isChecked) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = shortcut.i18n(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = shortcut.description(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    Switch(
+                        checked = isChecked,
+                        onCheckedChange = { checked ->
+                            onAction(InterfaceSettingsUiAction.OnHomeShortcutToggle(shortcut, checked))
+                        },
+                    )
                 }
             }
         }
@@ -571,93 +596,5 @@ private fun ThemeGrid(
 private fun InterfaceSettingsPreview() {
     AlAzanThemePreview {
         InterfaceSettingsScreen(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun DisplaySizeCardPreview() {
-    AlAzanThemePreview {
-        DisplaySizeCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun LanguageCardPreview() {
-    AlAzanThemePreview {
-        LanguageCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun ThemesCardPreview() {
-    AlAzanThemePreview {
-        ThemesCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun PrayerVisibilityCardPreview() {
-    AlAzanThemePreview {
-        PrayerVisibilityCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun CountdownCardPreview() {
-    AlAzanThemePreview {
-        CountdownCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun HighlightCurrentPrayerCardPreview() {
-    AlAzanThemePreview {
-        HighlightCurrentPrayerCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun HomeShortcutsCardPreview() {
-    AlAzanThemePreview {
-        HomeShortcutsCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun TimeFormatCardPreview() {
-    AlAzanThemePreview {
-        TimeFormatCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun NumberingSystemCardPreview() {
-    AlAzanThemePreview {
-        NumberingSystemCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun CalendarsCardPreview() {
-    AlAzanThemePreview {
-        CalendarsCard(uiState = InterfaceSettingsUiState(), onAction = {})
-    }
-}
-
-@Preview
-@Composable
-private fun CalendarDisplayCardPreview() {
-    AlAzanThemePreview {
-        CalendarDisplayCard(uiState = InterfaceSettingsUiState(), onAction = {})
     }
 }

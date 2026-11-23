@@ -10,23 +10,32 @@
     android:layoutDirection="rtl"
     android:orientation="horizontal">
 
-
+    <!-- Prayer 1: Fajr -->
     <LinearLayout
         android:id="@+id/prayer1"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_normal"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/prayer1_name"
             style="@style/PrayerLabels"
+            android:textSize="11sp"
             android:text="Fajr"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer1_time"
             style="@style/PrayerLabels"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="00:00"
             tools:ignore="HardcodedText" />
 
@@ -37,40 +46,59 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_active"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/prayer1active_name"
             style="@style/PrayerLabelsActive"
+            android:textSize="11sp"
+            android:textStyle="bold"
             android:text="-"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer1active_time"
             style="@style/PrayerLabelsActive"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="--:--"
             tools:ignore="HardcodedText" />
 
     </LinearLayout>
 
+    <!-- Prayer 2: Sunrise -->
     <LinearLayout
         android:id="@+id/prayer2"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="1dp"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_normal"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/prayer2_name"
             style="@style/PrayerLabels"
+            android:textSize="11sp"
             android:text="Sunrise"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer2_time"
             style="@style/PrayerLabels"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="00:00"
             tools:ignore="HardcodedText" />
 
@@ -81,40 +109,59 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_active"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/prayer2active_name"
             style="@style/PrayerLabelsActive"
+            android:textSize="11sp"
+            android:textStyle="bold"
             android:text="-"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer2active_time"
             style="@style/PrayerLabelsActive"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="--:--"
             tools:ignore="HardcodedText" />
 
     </LinearLayout>
 
+    <!-- Prayer 3: Dhuhr -->
     <LinearLayout
         android:id="@+id/prayer3"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="1dp"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_normal"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/prayer3_name"
             style="@style/PrayerLabels"
+            android:textSize="11sp"
             android:text="Dhuhr"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer3_time"
             style="@style/PrayerLabels"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="00:00"
             tools:ignore="HardcodedText" />
 
@@ -125,40 +172,59 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_active"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/prayer3active_name"
             style="@style/PrayerLabelsActive"
+            android:textSize="11sp"
+            android:textStyle="bold"
             android:text="-"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer3active_time"
             style="@style/PrayerLabelsActive"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="--:--"
             tools:ignore="HardcodedText" />
 
     </LinearLayout>
 
+    <!-- Prayer 4: Asr -->
     <LinearLayout
         android:id="@+id/prayer4"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="1dp"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_normal"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/prayer4_name"
             style="@style/PrayerLabels"
+            android:textSize="11sp"
             android:text="Asr"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer4_time"
             style="@style/PrayerLabels"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="00:00"
             tools:ignore="HardcodedText" />
 
@@ -169,40 +235,59 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_active"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/prayer4active_name"
             style="@style/PrayerLabelsActive"
+            android:textSize="11sp"
+            android:textStyle="bold"
             android:text="-"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer4active_time"
             style="@style/PrayerLabelsActive"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="--:--"
             tools:ignore="HardcodedText" />
 
     </LinearLayout>
 
+    <!-- Prayer 5: Maghrib -->
     <LinearLayout
         android:id="@+id/prayer5"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="1dp"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_normal"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/prayer5_name"
             style="@style/PrayerLabels"
+            android:textSize="11sp"
             android:text="Maghrib"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer5_time"
             style="@style/PrayerLabels"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="00:00"
             tools:ignore="HardcodedText" />
 
@@ -213,40 +298,59 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_active"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/prayer5active_name"
             style="@style/PrayerLabelsActive"
+            android:textSize="11sp"
+            android:textStyle="bold"
             android:text="-"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer5active_time"
             style="@style/PrayerLabelsActive"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="--:--"
             tools:ignore="HardcodedText" />
 
     </LinearLayout>
 
+    <!-- Prayer 6: Isha -->
     <LinearLayout
         android:id="@+id/prayer6"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="1dp"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_normal"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/prayer6_name"
             style="@style/PrayerLabels"
+            android:textSize="11sp"
             android:text="Isha"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer6_time"
             style="@style/PrayerLabels"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="00:00"
             tools:ignore="HardcodedText" />
 
@@ -257,18 +361,28 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/widget_slot_active"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:orientation="vertical"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/prayer6active_name"
             style="@style/PrayerLabelsActive"
+            android:textSize="11sp"
+            android:textStyle="bold"
             android:text="Isha"
             tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/prayer6active_time"
             style="@style/PrayerLabelsActive"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp"
             android:text="00:00"
             tools:ignore="HardcodedText" />
 

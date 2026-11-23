@@ -3,6 +3,7 @@ package com.github.meypod.al_azan.main.settings.appearance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.meypod.al_azan.R
+import com.github.meypod.al_azan.core.domain.model.settings.HOME_SHORTCUTS_IN_ORDER
 import com.github.meypod.al_azan.core.domain.model.settings.MAX_HOME_SHORTCUTS
 import com.github.meypod.al_azan.core.domain.model.settings.Settings
 import com.github.meypod.al_azan.core.domain.model.settings.maxHomeShortcuts
@@ -106,7 +107,7 @@ class InterfaceSettingsViewModel @Inject constructor(
 
     private fun onHomeShortcutToggle(action: InterfaceSettingsUiAction.OnHomeShortcutToggle) {
         val settings = _uiState.value.settings
-        val current = settings.homeShortcuts
+        val current = settings.homeShortcuts.filter { it in HOME_SHORTCUTS_IN_ORDER }
         val max = maxHomeShortcuts(settings.hideToolbarCalendar)
         // The top app bar only has room for a few icons; block enabling one past the cap.
         if (action.enabled && action.shortcut !in current && current.size >= max) {
@@ -117,7 +118,7 @@ class InterfaceSettingsViewModel @Inject constructor(
         }
         update { settings ->
             // Preserve the user's enable order — it's their chosen left-to-right order in the toolbar.
-            val selected = settings.homeShortcuts.toMutableList()
+            val selected = settings.homeShortcuts.filter { it in HOME_SHORTCUTS_IN_ORDER }.toMutableList()
             if (action.enabled) {
                 if (action.shortcut !in selected) selected.add(action.shortcut)
             } else {

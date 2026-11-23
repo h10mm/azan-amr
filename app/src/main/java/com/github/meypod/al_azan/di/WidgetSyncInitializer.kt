@@ -11,9 +11,11 @@ import com.github.meypod.al_azan.core.domain.model.settings.NumberingSystem
 import com.github.meypod.al_azan.core.domain.model.settings.SecondaryCalendar
 import com.github.meypod.al_azan.core.domain.model.settings.WidgetCityNamePos
 import com.github.meypod.al_azan.core.domain.model.widget.CustomWidgetConfig
+import com.github.meypod.al_azan.core.domain.model.widget.NateegaWidgetConfig
 import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.CustomWidgetConfigRepository
 import com.github.meypod.al_azan.core.domain.repository.FavoriteLocationsRepository
+import com.github.meypod.al_azan.core.domain.repository.NateegaWidgetConfigRepository
 import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
 import com.github.meypod.al_azan.widget.WidgetUpdater
 import io.github.meypod.adhan_kotlin.CalculationParameters
@@ -42,6 +44,7 @@ class WidgetSyncInitializer @Inject constructor(
     private val calculationSettingsRepository: CalculationSettingsRepository,
     private val favoriteLocationsRepository: FavoriteLocationsRepository,
     private val customWidgetConfigRepository: CustomWidgetConfigRepository,
+    private val nateegaWidgetConfigRepository: NateegaWidgetConfigRepository,
     private val widgetUpdater: WidgetUpdater,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -80,6 +83,7 @@ class WidgetSyncInitializer @Inject constructor(
         // Editing or deleting a displayed favorite — even one that isn't the selected calc location —
         // changes this list and forces an immediate redraw instead of leaving a stale page.
         val customWidgetLocationDetails: List<CalculationLocationDetail>,
+        val nateegaWidget: NateegaWidgetConfig,
     )
 
     @OptIn(ExperimentalAtomicApi::class)
@@ -92,7 +96,8 @@ class WidgetSyncInitializer @Inject constructor(
                 calculationSettingsRepository.data,
                 favoriteLocationsRepository.data,
                 customWidgetConfigRepository.data,
-            ) { settings, calc, locations, customWidget ->
+                nateegaWidgetConfigRepository.data,
+            ) { settings, calc, locations, customWidget, nateegaWidget ->
                 val location = locations.firstOrNull { it.id == calc.locationId }?.locationDetail
                 val customWidgetLocationDetails = customWidget.locationIds.mapNotNull { id ->
                     locations.firstOrNull { it.id == id }?.locationDetail
@@ -122,6 +127,7 @@ class WidgetSyncInitializer @Inject constructor(
                     locationLabel = location?.label,
                     customWidget = customWidget,
                     customWidgetLocationDetails = customWidgetLocationDetails,
+                    nateegaWidget = nateegaWidget,
                 )
             }
                 .distinctUntilChanged()

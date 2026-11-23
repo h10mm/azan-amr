@@ -16,46 +16,94 @@ class SettingsMenuViewModel
 
     fun onAction(action: SettingsMenuUiAction) {
         when (action) {
-            SettingsMenuUiAction.OnInterfaceSettingsClick -> onInterfaceSettingsClick()
-            SettingsMenuUiAction.OnNotificationAndSoundClick -> onNotificationAndSoundClick()
-            SettingsMenuUiAction.OnScheduleAndMuezzinClick -> onScheduleAndMuezzinClick()
-            SettingsMenuUiAction.OnCalculationClick -> onCalculationClick()
             SettingsMenuUiAction.OnLocationClick -> onLocationClick()
-            SettingsMenuUiAction.OnTroubleshootClick -> onTroubleshootClick()
+            SettingsMenuUiAction.OnCalculationClick -> onCalculationClick()
+            SettingsMenuUiAction.OnScheduleAndMuezzinClick -> onScheduleAndMuezzinClick()
+
+            SettingsMenuUiAction.OnNotificationAndSoundClick -> onNotificationAndSoundClick()
+            SettingsMenuUiAction.OnRemindersClick -> onRemindersClick()
+
+            SettingsMenuUiAction.OnNateegaAppearanceClick -> onNateegaAppearanceClick()
+            SettingsMenuUiAction.OnCompactPrayerAppearanceClick -> onCompactPrayerAppearanceClick()
             SettingsMenuUiAction.OnWidgetSettingsClick -> onWidgetSettingsClick()
+            SettingsMenuUiAction.OnNotificationWidgetClick -> onNotificationWidgetClick()
+            SettingsMenuUiAction.OnInterfaceSettingsClick -> onInterfaceSettingsClick()
+            SettingsMenuUiAction.OnTasbihClick -> onTasbihClick()
+            SettingsMenuUiAction.OnAzkarClick -> onAzkarClick()
+            SettingsMenuUiAction.OnCalendarClick -> onCalendarClick()
+            SettingsMenuUiAction.OnMonthlyViewClick -> onMonthlyViewClick()
+
+            SettingsMenuUiAction.OnTroubleshootClick -> onTroubleshootClick()
             SettingsMenuUiAction.OnBackupAndRestoreClick -> onBackupAndRestoreClick()
+            SettingsMenuUiAction.OnAboutClick -> onAboutClick()
         }
-    }
-
-    private fun onInterfaceSettingsClick() {
-        NavigationController.navigateTo(Route.Main.Settings.InterfaceSettings)
-    }
-
-    private fun onNotificationAndSoundClick() {
-        NavigationController.navigateTo(Route.Main.Settings.SoundAndNotifications)
-    }
-
-    private fun onScheduleAndMuezzinClick() {
-        NavigationController.navigateTo(Route.Main.Settings.SoundAndNotifications.ScheduleAndMuezzin)
-    }
-
-    private fun onCalculationClick() {
-        NavigationController.navigateTo(Route.Main.Settings.Calculations)
     }
 
     private fun onLocationClick() {
         NavigationController.navigateTo(Route.Main.Location)
     }
 
-    private fun onTroubleshootClick() {
-        NavigationController.navigateTo(Route.Main.Settings.Troubleshoot)
+    private fun onCalculationClick() {
+        NavigationController.navigateTo(Route.Main.Settings.Calculations)
+    }
+
+    private fun onScheduleAndMuezzinClick() {
+        NavigationController.navigateTo(Route.Main.Settings.SoundAndNotifications.ScheduleAndMuezzin)
+    }
+
+    private fun onNotificationAndSoundClick() {
+        NavigationController.navigateTo(Route.Main.Settings.SoundAndNotifications)
+    }
+
+    private fun onRemindersClick() {
+        NavigationController.navigateTo(Route.Main.Reminder)
+    }
+
+    private fun onNateegaAppearanceClick() {
+        NavigationController.navigateTo(Route.Main.Settings.WidgetSettings.NateegaAppearance)
+    }
+
+    private fun onCompactPrayerAppearanceClick() {
+        NavigationController.navigateTo(Route.Main.Settings.WidgetSettings.CompactPrayerAppearance)
     }
 
     private fun onWidgetSettingsClick() {
         NavigationController.navigateTo(Route.Main.Settings.WidgetSettings)
     }
 
+    private fun onNotificationWidgetClick() {
+        NavigationController.navigateTo(Route.Main.Settings.NotificationWidget)
+    }
+
+    private fun onInterfaceSettingsClick() {
+        NavigationController.navigateTo(Route.Main.Settings.InterfaceSettings)
+    }
+
+    private fun onTasbihClick() {
+        NavigationController.navigateTo(Route.Main.Counter)
+    }
+
+    private fun onAzkarClick() {
+        NavigationController.navigateTo(Route.Main.Azkar)
+    }
+
+    private fun onCalendarClick() {
+        NavigationController.navigateTo(Route.Main.CalendarView)
+    }
+
+    private fun onMonthlyViewClick() {
+        NavigationController.navigateTo(Route.Main.MonthlyView)
+    }
+
+    private fun onTroubleshootClick() {
+        NavigationController.navigateTo(Route.Main.Settings.Troubleshoot)
+    }
+
     private fun onBackupAndRestoreClick() {
         NavigationController.navigateTo(Route.Main.Settings.BackupAndRestore)
+    }
+
+    private fun onAboutClick() {
+        NavigationController.navigateTo(Route.Main.About)
     }
 }

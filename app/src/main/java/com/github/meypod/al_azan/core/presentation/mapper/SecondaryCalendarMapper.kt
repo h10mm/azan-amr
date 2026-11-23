@@ -8,6 +8,8 @@ import com.github.meypod.al_azan.core.domain.model.settings.SecondaryCalendar
 fun SecondaryCalendar.stringRes(): Int =
     when (this) {
         SecondaryCalendar.Gregorian -> R.string.calendar_gregorian
+        SecondaryCalendar.Coptic -> R.string.calendar_coptic
+        SecondaryCalendar.Levant -> R.string.calendar_levant
         SecondaryCalendar.Persian -> R.string.calendar_persian
         SecondaryCalendar.Ethiopic -> R.string.calendar_ethiopic
         SecondaryCalendar.Buddhist -> R.string.calendar_buddhist

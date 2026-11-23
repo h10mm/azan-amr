@@ -31,3 +31,15 @@ todo
 # tablet store screenshots (not published yet)
 **/sevenInchScreenshots/
 **/tenInchScreenshots/
+
+# Signing keys and sensitive release credentials (never commit to GitHub)
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+**/release-key*
+
+# Built release binaries (publish via GitHub Releases, not Git history)
+app/release/
+*.apk
+*.aab

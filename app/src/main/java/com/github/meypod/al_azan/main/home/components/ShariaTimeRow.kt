@@ -1,9 +1,11 @@
 package com.github.meypod.al_azan.main.home.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,281 +15,131 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.meypod.al_azan.R
 import com.github.meypod.al_azan.core.domain.model.adhan.Prayer
 import com.github.meypod.al_azan.core.domain.model.adhan.i18n
 import com.github.meypod.al_azan.core.domain.model.settings.ThemeColor
 import com.github.meypod.al_azan.core.domain.util.formatInstant
-import com.github.meypod.al_azan.core.presentation.AlAzanTheme
-import com.github.meypod.al_azan.core.presentation.ClassicHighlightBackground
-import com.github.meypod.al_azan.core.presentation.ClassicBorderHighlight
-import com.github.meypod.al_azan.core.presentation.LightColorScheme
-import com.github.meypod.al_azan.core.presentation.TertiaryFixed
-import com.github.meypod.al_azan.core.presentation.util.dashedBorder
-import com.github.meypod.al_azan.core.presentation.util.dropShadow2Up
-import com.github.meypod.al_azan.core.presentation.util.solidBorder
-import kotlin.time.Clock
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 @Composable
 fun ShariaTimeRow(
     state: ShariaTimeRowUiState,
     compact: Boolean = false,
 ) {
-    val paddingRes = if (compact) R.dimen.element_padding_compact else R.dimen.element_padding
-    val classic = state.themeColor.isClassic()
-    val fadeTarget = if (state.themeColor == ThemeColor.ClassicLight) Color.White else Color.Black
-    val textColor = if (classic) {
-        when (state.highlightState) {
-            HighlightState.BeforeHighlight ->
-                lerp(MaterialTheme.colorScheme.outline, fadeTarget, 0.3f)
+    val isHighlighted = state.highlightState == HighlightState.Highlighted
+    val dynamicFontSize = if (compact) 15.sp else 20.sp
 
-            HighlightState.Highlighted -> MaterialTheme.colorScheme.primary
-
-            HighlightState.AfterHighlight -> MaterialTheme.colorScheme.onSurface
-        }
-    } else {
-        when (state.highlightState) {
-            HighlightState.BeforeHighlight -> MaterialTheme.colorScheme.outline
-            HighlightState.Highlighted ->
-                if (state.themeColor == ThemeColor.Dynamic) {
-                    LightColorScheme.onTertiaryFixed
-                } else {
-                    MaterialTheme.colorScheme.onTertiaryFixed
-                }
-            HighlightState.AfterHighlight -> MaterialTheme.colorScheme.onSecondaryContainer
-        }
+    // 1. لون خلفية الصلاة الحالية حسب السمة المحددة
+    val targetHighlightBg = when (state.themeColor) {
+        ThemeColor.ClassicLight -> Color(0xFFC9EDEE) // خلفية بترولية فاتحة ناعمة متناسقة مع كروت التطبيق
+        ThemeColor.MidnightBlue -> Color(0xFF1E3566) // كحلي ملكي مميز عالي التباين
+        ThemeColor.Dark -> Color(0xFF0C2425)         // خلفية داكنة راقية بلمسة بترولية ناعمة متناسقة مع الأسود
     }
+
+    val animatedBgColor by animateColorAsState(
+        targetValue = if (isHighlighted) targetHighlightBg else when (state.themeColor) {
+            ThemeColor.ClassicLight -> Color.White // كرت أبيض ناصع متناسق وأنيق
+            ThemeColor.MidnightBlue -> Color(0xFF111D3B) // كرت كحلي داكن منفصل بوضوح تام عن الخلفية
+            ThemeColor.Dark -> Color(0xFF141414)         // كرت أسود ناعم منفصل بوضوح تام عن الخلفية السوداء
+        },
+        animationSpec = tween(300),
+        label = "rowBgAnimation"
+    )
+
+    // لون التمييز المخصص للحدود والنصوص للصلاة النشطة
+    val accentColor = when (state.themeColor) {
+        ThemeColor.ClassicLight -> Color(0xFF00585A) // لون بترولي رئيسي للهوية في الوضع الفاتح
+        ThemeColor.MidnightBlue -> Color(0xFFFFD166) // أصفر ذهبي كهرماني دافئ ومشرق (متوافق مع عمى الألوان)
+        ThemeColor.Dark -> Color(0xFF76D5D8)         // تركواز مشرق من هوية التطبيق الأساسية
+    }
+
+    // 2. لون النصوص لضمان أعلى درجات التباين والوضوح
+    val textColor = when {
+        isHighlighted && state.themeColor == ThemeColor.ClassicLight -> Color(0xFF003738)
+        isHighlighted -> accentColor
+        state.themeColor == ThemeColor.ClassicLight -> Color(0xFF181C1C)
+        state.themeColor == ThemeColor.MidnightBlue -> Color(0xFFFFFFFF) // أبيض ناصع 100% لكافة النصوص والأرقام
+        state.themeColor == ThemeColor.Dark -> Color(0xFFFFFFFF)         // أبيض ناصع 100% لكافة نصوص وأرقام الوضع الداكن
+        else -> Color.White.copy(alpha = 0.92f)
+    }
+
+    val rowShape = RoundedCornerShape(16.dp)
+
     Row(
         Modifier
+            .fillMaxWidth()
+            .padding(horizontal = if (compact) 6.dp else 14.dp, vertical = if (compact) 2.dp else 3.dp)
+            .clip(rowShape)
+            .background(animatedBgColor)
             .then(
-                if (classic) {
-                    Modifier
-                } else {
-                    when (state.highlightState) {
-                        HighlightState.BeforeHighlight -> Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
-
-                        HighlightState.Highlighted -> {
-                            val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-                            Modifier
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .dropShadow2Up(shape)
-                                .clip(shape)
-                                .background(TertiaryFixed)
-                        }
-
-                        HighlightState.AfterHighlight -> Modifier.background(
-                            MaterialTheme.colorScheme.secondaryContainer,
-                        )
-                    }
-                },
+                when {
+                    isHighlighted && state.themeColor == ThemeColor.MidnightBlue ->
+                        Modifier.border(2.dp, accentColor, rowShape)
+                    isHighlighted && state.themeColor == ThemeColor.Dark ->
+                        Modifier.border(2.dp, accentColor, rowShape)
+                    isHighlighted ->
+                        Modifier.border(2.dp, accentColor, rowShape)
+                    state.themeColor == ThemeColor.ClassicLight ->
+                        Modifier.border(1.dp, Color(0xFFD2E4E4), rowShape)
+                    state.themeColor == ThemeColor.MidnightBlue ->
+                        Modifier.border(1.dp, Color(0xFF2B4170), rowShape)
+                    state.themeColor == ThemeColor.Dark ->
+                        Modifier.border(1.dp, Color(0xFF303030), rowShape)
+                    else -> Modifier
+                }
             )
-            .then(
-                if (classic) {
-                    Modifier
-                } else {
-                    Modifier.padding(
-                        dimensionResource(paddingRes),
-                    )
-                },
-            ),
+            .padding(horizontal = if (compact) 10.dp else 16.dp, vertical = if (compact) 7.dp else 15.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
-            Modifier
-                .fillMaxWidth()
-                .then(
-                    if (state.prayer.isNonPrayer) {
-                        val highlighted = state.highlightState == HighlightState.Highlighted
-                        val classicLightHighlight =
-                            highlighted && state.themeColor == ThemeColor.ClassicLight
-                        Modifier
-                            .then(
-                                if (classicLightHighlight) {
-                                    Modifier
-                                        .clip(MaterialTheme.shapes.medium)
-                                        .background(ClassicHighlightBackground)
-                                } else {
-                                    Modifier
-                                },
-                            )
-                            .dashedBorder(
-                                borderColor = if (classic && highlighted) ClassicBorderHighlight else textColor,
-                                shape = if (classic) MaterialTheme.shapes.medium else MaterialTheme.shapes.extraLarge,
-                                strokeWidth = if (classic && highlighted) 7f else 3f,
-                            )
-                    } else if (classic) {
-                        val highlighted = state.highlightState == HighlightState.Highlighted
-                        val classicLightHighlight =
-                            highlighted && state.themeColor == ThemeColor.ClassicLight
-                        Modifier
-                            .then(
-                                if (classicLightHighlight) {
-                                    Modifier
-                                        .clip(MaterialTheme.shapes.medium)
-                                        .background(ClassicHighlightBackground)
-                                } else {
-                                    Modifier
-                                },
-                            )
-                            .solidBorder(
-                                borderColor = if (highlighted) ClassicBorderHighlight else textColor,
-                                shape = MaterialTheme.shapes.medium,
-                                strokeWidth = if (highlighted) 7f else 3f,
-                            )
-                    } else {
-                        Modifier
-                    },
-                )
-                .padding(dimensionResource(R.dimen.element_padding)),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding_compact)),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    state.prayer.i18n(),
-                    fontWeight = if (state.highlightState ==
-                        HighlightState.Highlighted
-                    ) {
-                        FontWeight.SemiBold
-                    } else {
-                        FontWeight.Normal
-                    },
-                    color = textColor,
-                )
-                if (state.skipped) {
-                    Icon(
-                        painterResource(R.drawable.outline_volume_off),
-                        contentDescription = stringResource(R.string.upcoming_alarm_skipped),
-                        tint = textColor,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-            if (state.instant == null) {
-                Text("--:--")
-            } else {
-                Text(
-                    formatInstant(
-                        state.instant,
-                        state.locale,
-                        "gregorian",
-                        if (state.is24Hours) "HH:mm" else "hh:mm",
-                        state.numberingSystem,
-                    ),
-                    fontWeight = if (state.highlightState ==
-                        HighlightState.Highlighted
-                    ) {
-                        FontWeight.SemiBold
-                    } else {
-                        FontWeight.Normal
-                    },
-                    color = textColor,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RowStatesPreview(themeColor: ThemeColor = ThemeColor.Default) {
-    Column {
-        ShariaTimeRow(
-            ShariaTimeRowUiState(
-                Prayer.Fajr,
-                Clock.System.now().plus(12.toDuration(DurationUnit.HOURS)),
-                is24Hours = false,
-                highlightState = HighlightState.BeforeHighlight,
-                themeColor = themeColor,
-            ),
-        )
-        ShariaTimeRow(
-            ShariaTimeRowUiState(
-                Prayer.Sunrise,
-                Clock.System.now(),
-                highlightState = HighlightState.Highlighted,
-                themeColor = themeColor,
-            ),
-        )
-        ShariaTimeRow(
-            ShariaTimeRowUiState(
-                Prayer.Dhuhr,
-                null,
-                highlightState = HighlightState.AfterHighlight,
-                themeColor = themeColor,
-                skipped = true,
-            ),
-        )
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
-@Composable
-private fun ShariaTimeRowPreview() {
-    AlAzanTheme {
-        RowStatesPreview()
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
-@Composable
-private fun ShariaTimeRowClassicLightPreview() {
-    AlAzanTheme(ThemeColor.ClassicLight) {
-        RowStatesPreview(ThemeColor.ClassicLight)
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFF000000)
-@Composable
-private fun ShariaTimeRowClassicDarkPreview() {
-    AlAzanTheme(ThemeColor.ClassicDark) {
-        RowStatesPreview(ThemeColor.ClassicDark)
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
-@Composable
-private fun ShariaTimeRowClassicLightPrayerPreview() {
-    AlAzanTheme(ThemeColor.ClassicLight) {
-        Box(Modifier.padding(16.dp)) {
-            ShariaTimeRow(
-                ShariaTimeRowUiState(
-                    Prayer.Dhuhr,
-                    Clock.System.now(),
-                    highlightState = HighlightState.Highlighted,
-                    themeColor = ThemeColor.ClassicLight,
-                ),
+            Text(
+                text = state.prayer.i18n(),
+                fontSize = dynamicFontSize,
+                fontWeight = if (isHighlighted) FontWeight.ExtraBold else FontWeight.Bold,
+                color = textColor,
             )
+            if (state.skipped) {
+                Icon(
+                    painterResource(R.drawable.outline_volume_off),
+                    contentDescription = stringResource(R.string.upcoming_alarm_skipped),
+                    tint = textColor,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
-@Composable
-private fun ShariaTimeRowClassicLightNonPrayerPreview() {
-    AlAzanTheme(ThemeColor.ClassicLight) {
-        Box(Modifier.padding(16.dp)) {
-            ShariaTimeRow(
-                ShariaTimeRowUiState(
-                    Prayer.Sunrise,
-                    Clock.System.now(),
-                    highlightState = HighlightState.Highlighted,
-                    themeColor = ThemeColor.ClassicLight,
+        if (state.instant == null) {
+            Text(
+                text = "--:--",
+                fontSize = dynamicFontSize,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+            )
+        } else {
+            Text(
+                text = formatInstant(
+                    state.instant,
+                    state.locale,
+                    "gregorian",
+                    if (state.is24Hours) "HH:mm" else "hh:mm",
+                    state.numberingSystem,
                 ),
+                fontSize = dynamicFontSize,
+                fontWeight = if (isHighlighted) FontWeight.ExtraBold else FontWeight.Bold,
+                color = textColor,
             )
         }
     }

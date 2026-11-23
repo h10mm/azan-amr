@@ -62,7 +62,7 @@ sealed interface Route : NavKey {
         data object Location : Route
 
         @Serializable
-        data object CalendarView : Route
+        data object CalendarView : Route, DeepLinkableRoute
 
         @Serializable
         data object MonthlyView : Route, DeepLinkableRoute
@@ -80,7 +80,29 @@ sealed interface Route : NavKey {
         data object Counter : Route, DeepLinkableRoute
 
         @Serializable
-        data object Settings : Route {
+        data object Azkar : Route, DeepLinkableRoute
+
+        @Serializable
+        data class AzkarDetail(
+            val categoryId: String,
+            val initialDhikrId: String? = null,
+        ) : Route, DeepLinkableRoute {
+            override fun toUriString(): String =
+                if (initialDhikrId != null) {
+                    "al-azan://AzkarDetail/$categoryId?initialDhikrId=$initialDhikrId"
+                } else {
+                    "al-azan://AzkarDetail/$categoryId"
+                }
+        }
+
+        @Serializable
+        data object QuranKahf : Route, DeepLinkableRoute
+
+        @Serializable
+        data object QuranMulk : Route, DeepLinkableRoute
+
+        @Serializable
+        data object Settings : Route, DeepLinkableRoute {
 
             @Serializable
             data object InterfaceSettings : Route, DeepLinkableRoute
@@ -112,16 +134,25 @@ sealed interface Route : NavKey {
             }
 
             @Serializable
-            data object WidgetSettings : Route {
+            data object WidgetSettings : Route, DeepLinkableRoute {
                 @Serializable
                 data object TableAppearance : Route
 
                 @Serializable
-                data object CompactAppearance : Route
+                data object CompactAppearance : Route, DeepLinkableRoute
 
                 @Serializable
                 data object CustomBuilder : Route, DeepLinkableRoute
+
+                @Serializable
+                data object NateegaAppearance : Route, DeepLinkableRoute
+
+                @Serializable
+                data object CompactPrayerAppearance : Route, DeepLinkableRoute
             }
+
+            @Serializable
+            data object NotificationWidget : Route, DeepLinkableRoute
 
             @Serializable
             data object BackupAndRestore : Route
@@ -160,30 +191,73 @@ internal val deepLinkPatterns: List<DeepLinkPattern<out Route>> by lazy {
                 Route.Main.Settings.Calculations.toUriString().toUri(),
             ),
         )
-        // Debug-only: extra screens for tooling (fastlane screenshot scripts) to open directly via adb.
-        if (BuildConfig.DEBUG) {
-            add(DeepLinkPattern(Route.Main.MonthlyView.serializer(), Route.Main.MonthlyView.toUriString().toUri()))
-            add(DeepLinkPattern(Route.Main.Reminder.serializer(), Route.Main.Reminder.toUriString().toUri()))
-            add(DeepLinkPattern(Route.Main.QiblaCompass.serializer(), Route.Main.QiblaCompass.toUriString().toUri()))
-            add(DeepLinkPattern(Route.Main.Counter.serializer(), Route.Main.Counter.toUriString().toUri()))
-            add(
-                DeepLinkPattern(
-                    Route.Main.Settings.InterfaceSettings.serializer(),
-                    Route.Main.Settings.InterfaceSettings.toUriString().toUri(),
-                ),
-            )
-            add(
-                DeepLinkPattern(
-                    Route.Main.Settings.SoundAndNotifications.serializer(),
-                    Route.Main.Settings.SoundAndNotifications.toUriString().toUri(),
-                ),
-            )
-            add(
-                DeepLinkPattern(
-                    Route.Main.Settings.SoundAndNotifications.ScheduleAndMuezzin.serializer(),
-                    Route.Main.Settings.SoundAndNotifications.ScheduleAndMuezzin.toUriString().toUri(),
-                ),
-            )
-        }
+        // Opened by tapping Nateega widget prayer table and calendar sections.
+        add(DeepLinkPattern(Route.Main.MonthlyView.serializer(), Route.Main.MonthlyView.toUriString().toUri()))
+        add(DeepLinkPattern(Route.Main.CalendarView.serializer(), Route.Main.CalendarView.toUriString().toUri()))
+        add(DeepLinkPattern(Route.Main.Azkar.serializer(), Route.Main.Azkar.toUriString().toUri()))
+        add(
+            DeepLinkPattern(
+                Route.Main.AzkarDetail.serializer(),
+                "al-azan://AzkarDetail/{categoryId}?initialDhikrId={initialDhikrId}".toUri(),
+            ),
+        )
+        add(DeepLinkPattern(Route.Main.QuranKahf.serializer(), Route.Main.QuranKahf.toUriString().toUri()))
+        add(DeepLinkPattern(Route.Main.QuranMulk.serializer(), Route.Main.QuranMulk.toUriString().toUri()))
+        add(DeepLinkPattern(Route.Main.Reminder.serializer(), Route.Main.Reminder.toUriString().toUri()))
+        add(DeepLinkPattern(Route.Main.Counter.serializer(), Route.Main.Counter.toUriString().toUri()))
+        add(DeepLinkPattern(Route.Main.About.serializer(), "al-azan://About".toUri()))
+        add(DeepLinkPattern(Route.Main.Settings.serializer(), Route.Main.Settings.toUriString().toUri()))
+        add(DeepLinkPattern(Route.Main.QiblaCompass.serializer(), Route.Main.QiblaCompass.toUriString().toUri()))
+        add(DeepLinkPattern(Route.Main.Settings.Troubleshoot.serializer(), "al-azan://Troubleshoot".toUri()))
+
+        // Settings sub-screens
+        add(
+            DeepLinkPattern(
+                Route.Main.Settings.InterfaceSettings.serializer(),
+                Route.Main.Settings.InterfaceSettings.toUriString().toUri(),
+            ),
+        )
+        add(
+            DeepLinkPattern(
+                Route.Main.Settings.SoundAndNotifications.serializer(),
+                Route.Main.Settings.SoundAndNotifications.toUriString().toUri(),
+            ),
+        )
+        add(
+            DeepLinkPattern(
+                Route.Main.Settings.SoundAndNotifications.ScheduleAndMuezzin.serializer(),
+                Route.Main.Settings.SoundAndNotifications.ScheduleAndMuezzin.toUriString().toUri(),
+            ),
+        )
+        add(
+            DeepLinkPattern(
+                Route.Main.Settings.WidgetSettings.serializer(),
+                Route.Main.Settings.WidgetSettings.toUriString().toUri(),
+            ),
+        )
+        add(
+            DeepLinkPattern(
+                Route.Main.Settings.NotificationWidget.serializer(),
+                Route.Main.Settings.NotificationWidget.toUriString().toUri(),
+            ),
+        )
+        add(
+            DeepLinkPattern(
+                Route.Main.Settings.WidgetSettings.NateegaAppearance.serializer(),
+                Route.Main.Settings.WidgetSettings.NateegaAppearance.toUriString().toUri(),
+            ),
+        )
+        add(
+            DeepLinkPattern(
+                Route.Main.Settings.WidgetSettings.CompactPrayerAppearance.serializer(),
+                Route.Main.Settings.WidgetSettings.CompactPrayerAppearance.toUriString().toUri(),
+            ),
+        )
+        add(
+            DeepLinkPattern(
+                Route.Main.Settings.WidgetSettings.CompactAppearance.serializer(),
+                Route.Main.Settings.WidgetSettings.CompactAppearance.toUriString().toUri(),
+            ),
+        )
     }
 }

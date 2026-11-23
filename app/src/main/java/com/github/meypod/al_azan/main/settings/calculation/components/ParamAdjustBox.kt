@@ -45,7 +45,7 @@ fun ParamAdjustBox(
 @Composable
 private fun ParamAdjustBoxPreview() {
     Column(Modifier.padding(10.dp)) {
-        AlAzanTheme(ThemeColor.Light) {
+        AlAzanTheme(ThemeColor.ClassicLight) {
             ACard { cardPadding ->
                 ParamAdjustBox(stringResource(R.string.fajr_angle), "16", Modifier.padding(cardPadding))
             }

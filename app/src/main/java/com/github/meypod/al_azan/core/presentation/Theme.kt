@@ -1,19 +1,15 @@
 package com.github.meypod.al_azan.core.presentation
 
-import android.os.Build
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
@@ -55,6 +51,7 @@ private val DarkColorScheme = darkColorScheme(
     surfaceContainerLowest = DarkSurfaceContainerLowest,
     surfaceContainerHighest = DarkSurfaceContainerHighest,
 )
+
 val LightColorScheme = lightColorScheme(
     primary = LightPrimary,
     onPrimary = LightOnPrimary,
@@ -111,8 +108,6 @@ private val LightHighContrastColorScheme = lightColorScheme(
     onErrorContainer = LightHighContrastOnErrorContainer,
     background = LightHighContrastBackground,
     onBackground = LightHighContrastOnBackground,
-    // spec surface equals background here; use the container tone so elevated
-    // surfaces (cards) stay distinct from the page background
     surface = LightHighContrastSurfaceContainer,
     onSurface = LightHighContrastOnSurface,
     surfaceVariant = LightHighContrastSurfaceVariant,
@@ -131,43 +126,32 @@ private val LightHighContrastColorScheme = lightColorScheme(
     surfaceContainerHighest = LightHighContrastSurfaceContainerHighest,
 )
 
-private val DarkHighContrastColorScheme = darkColorScheme(
-    primary = DarkHighContrastPrimary,
-    onPrimary = DarkHighContrastOnPrimary,
-    primaryContainer = DarkHighContrastPrimaryContainer,
-    onPrimaryContainer = DarkHighContrastOnPrimaryContainer,
-    secondary = DarkHighContrastSecondary,
-    onSecondary = DarkHighContrastOnSecondary,
-    secondaryContainer = DarkHighContrastSecondaryContainer,
-    onSecondaryContainer = DarkHighContrastOnSecondaryContainer,
-    tertiary = DarkHighContrastTertiary,
-    onTertiary = DarkHighContrastOnTertiary,
-    tertiaryContainer = DarkHighContrastTertiaryContainer,
-    onTertiaryContainer = DarkHighContrastOnTertiaryContainer,
-    error = DarkHighContrastError,
-    onError = DarkHighContrastOnError,
-    errorContainer = DarkHighContrastErrorContainer,
-    onErrorContainer = DarkHighContrastOnErrorContainer,
-    background = DarkHighContrastBackground,
-    onBackground = DarkHighContrastOnBackground,
-    // spec surface equals background here; use the container tone so elevated
-    // surfaces (cards) stay distinct from the page background
-    surface = DarkHighContrastSurfaceContainer,
-    onSurface = DarkHighContrastOnSurface,
-    surfaceVariant = DarkHighContrastSurfaceVariant,
-    onSurfaceVariant = DarkHighContrastOnSurfaceVariant,
-    outline = DarkHighContrastOutline,
-    outlineVariant = DarkHighContrastOutlineVariant,
-    scrim = DarkHighContrastScrim,
-    inverseSurface = DarkHighContrastInverseSurface,
-    inverseOnSurface = DarkHighContrastInverseOnSurface,
-    inversePrimary = DarkHighContrastInversePrimary,
-    surfaceTint = DarkHighContrastSurfaceTint,
-    surfaceContainerLowest = DarkHighContrastSurfaceContainerLowest,
-    surfaceContainerLow = DarkHighContrastSurfaceContainerLow,
-    surfaceContainer = DarkHighContrastSurfaceContainer,
-    surfaceContainerHigh = DarkHighContrastSurfaceContainerHigh,
-    surfaceContainerHighest = DarkHighContrastSurfaceContainerHighest,
+private val MidnightBlueColorScheme = darkColorScheme(
+    primary = Color(0xFFFFD166), // أصفر كهرماني دافئ ومشرق - متوافق عالمياً مع عمى الألوان
+    onPrimary = Color(0xFF001B3D),
+    primaryContainer = Color(0xFF1E3566),
+    onPrimaryContainer = Color(0xFFFFE8A3),
+    secondary = Color(0xFF90CAF9),
+    onSecondary = Color(0xFF003258),
+    secondaryContainer = Color(0xFF132247),
+    onSecondaryContainer = Color(0xFFD1E4FF),
+    tertiary = Color(0xFFFFD166),
+    onTertiary = Color(0xFF3E2E00),
+    tertiaryContainer = Color(0xFF5B4300),
+    onTertiaryContainer = Color(0xFFFFE088),
+    background = Color(0xFF070D1E), // كحلي عميق جداً فاحم ومريح
+    onBackground = Color(0xFFF0F4F8),
+    surface = Color(0xFF0D1730),
+    onSurface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFF0A1128), // لون خلفية الهيدر وحاوية الصلوات
+    onSurfaceVariant = Color(0xFFE2E8F0),
+    outline = Color(0xFF2C3E6B),
+    outlineVariant = Color(0xFF1B2A4A),
+    surfaceContainerLowest = Color(0xFF050A18),
+    surfaceContainerLow = Color(0xFF0F1B38),
+    surfaceContainer = Color(0xFF152448),
+    surfaceContainerHigh = Color(0xFF1C2E58),
+    surfaceContainerHighest = Color(0xFF24396B),
 )
 
 @Composable
@@ -176,41 +160,19 @@ fun AlAzanTheme(
     displayScale: Float = 1f,
     content: @Composable () -> Unit,
 ) {
-    val systemDarkTheme = isSystemInDarkTheme()
     val darkTheme = when (themeColor) {
-        ThemeColor.Light, ThemeColor.ClassicLight -> false
-        ThemeColor.Dark, ThemeColor.ClassicDark -> true
-        ThemeColor.Dynamic, ThemeColor.Default -> systemDarkTheme
+        ThemeColor.ClassicLight -> false
+        ThemeColor.Dark, ThemeColor.MidnightBlue -> true
     }
-    val colorScheme = when {
-        themeColor == ThemeColor.Dynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            val dynamic = if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            // dynamic schemes set surface == background; shift surface to the container
-            // tone so elevated surfaces (cards) stay distinct from the page background
-            dynamic.copy(surface = dynamic.surfaceContainer)
-        }
 
-        else ->
-            when (themeColor) {
-                ThemeColor.Light -> LightColorScheme
-
-                ThemeColor.Dark -> DarkColorScheme
-
-                ThemeColor.ClassicLight -> LightHighContrastColorScheme
-
-                ThemeColor.ClassicDark -> DarkHighContrastColorScheme
-
-                ThemeColor.Dynamic,
-                ThemeColor.Default,
-                -> if (darkTheme) DarkColorScheme else LightColorScheme
-            }
+    val colorScheme = when (themeColor) {
+        ThemeColor.ClassicLight -> LightColorScheme
+        ThemeColor.MidnightBlue -> MidnightBlueColorScheme
+        ThemeColor.Dark -> DarkColorScheme
     }
 
     val activity = LocalActivity.current
     if (activity != null) {
-        // keep status/navigation bar icon contrast in sync with the resolved app theme,
-        // which can differ from the system dark-mode setting
         SideEffect {
             val controller = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
             controller.isAppearanceLightStatusBars = !darkTheme
@@ -219,15 +181,10 @@ fun AlAzanTheme(
     }
 
     val density = LocalDensity.current
-    // Scale the dp density (not fontScale) so the whole UI — text, icons, spacing — zooms uniformly
-    // by the slider. sp grows through density too, so text isn't scaled twice; the system font scale
-    // stays in fontScale and still stacks on top.
     val scaledDensity = remember(density, displayScale) {
         Density(density.density * displayScale, density.fontScale)
     }
 
-    // Persian/Arabic UI ship a bundled font whose metrics sit better with Latin than the system
-    // Arabic fallback; other locales keep the default. Gated on the applied UI locale, not device.
     val typography = when (LocalConfiguration.current.locales[0].language) {
         "fa" -> VazirmatnTypography
         "ar" -> NotoSansArabicTypography
@@ -237,7 +194,12 @@ fun AlAzanTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = typography,
+        shapes = AppShapes,
     ) {
-        CompositionLocalProvider(LocalDensity provides scaledDensity, content = content)
+        CompositionLocalProvider(
+            LocalDensity provides scaledDensity,
+            LocalAppDimensions provides AppDimensions.Default,
+            content = content,
+        )
     }
 }

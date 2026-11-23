@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.meypod.al_azan.R
 import com.github.meypod.al_azan.core.domain.model.adhan.SHARIA_TIMES_IN_ORDER
 import com.github.meypod.al_azan.core.domain.model.settings.Settings
+import com.github.meypod.al_azan.core.domain.repository.NateegaWidgetConfigRepository
 import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -18,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class WidgetSettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    private val nateegaConfigRepository: NateegaWidgetConfigRepository,
 ) : ViewModel() {
 
     private companion object {
@@ -35,6 +37,9 @@ class WidgetSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.data.collect { s -> _uiState.update { it.copy(settings = s) } }
         }
+        viewModelScope.launch {
+            nateegaConfigRepository.data.collect { cfg -> _uiState.update { it.copy(nateegaConfig = cfg) } }
+        }
     }
 
     fun onAction(action: WidgetSettingsUiAction) {
@@ -49,6 +54,39 @@ class WidgetSettingsViewModel @Inject constructor(
             is WidgetSettingsUiAction.OnHijriDayStartsAtMaghribToggle -> onHijriDayStartsAtMaghribToggle(action)
             is WidgetSettingsUiAction.OnPrayerVisibilityChange -> onPrayerVisibilityChange(action)
             is WidgetSettingsUiAction.OnCountdownPrayerToggle -> onCountdownPrayerToggle(action)
+            is WidgetSettingsUiAction.OnNateegaThemeModeChange -> updateNateega { it.copy(themeMode = action.value) }
+            is WidgetSettingsUiAction.OnNateegaClockPositionChange -> updateNateega { it.copy(clockPosition = action.value) }
+            is WidgetSettingsUiAction.OnNateegaShowCopticToggle -> updateNateega { it.copy(showCopticDate = action.value) }
+            is WidgetSettingsUiAction.OnNateegaShowCountdownToggle -> updateNateega { it.copy(showCountdown = action.value) }
+            is WidgetSettingsUiAction.OnNateegaShowWisdomToggle -> updateNateega { it.copy(showWisdom = action.value) }
+            is WidgetSettingsUiAction.OnCompactDateDisplayModeChange -> updateNateega { it.copy(compactDateDisplayMode = action.value) }
+            is WidgetSettingsUiAction.OnCompactDateOrderChange -> updateNateega { it.copy(compactDateOrder = action.value) }
+            is WidgetSettingsUiAction.OnCompactThemeModeChange -> updateNateega { it.copy(compactThemeMode = action.value) }
+            is WidgetSettingsUiAction.OnCompactShowCountdownToggle -> updateNateega { it.copy(compactShowCountdown = action.value) }
+            is WidgetSettingsUiAction.OnCompactShowWisdomToggle -> updateNateega { it.copy(compactShowWisdom = action.value) }
+            is WidgetSettingsUiAction.OnDeskCalendarShowCountdownToggle -> updateNateega { it.copy(deskCalendarShowCountdown = action.value) }
+            is WidgetSettingsUiAction.OnDeskCalendarTypeChange -> updateNateega { it.copy(deskCalendarType = action.value) }
+            is WidgetSettingsUiAction.OnDeskCalendarHighlightNextPrayerToggle -> updateNateega { it.copy(deskCalendarHighlightNextPrayer = action.value) }
+            is WidgetSettingsUiAction.OnDeskCalendarThemeModeChange -> updateNateega { it.copy(deskCalendarThemeMode = action.value) }
+            is WidgetSettingsUiAction.OnDialThemeModeChange -> updateNateega { it.copy(dialThemeMode = action.value) }
+            is WidgetSettingsUiAction.OnSquareThemeModeChange -> updateNateega { it.copy(squareThemeMode = action.value) }
+            is WidgetSettingsUiAction.OnSlimBarThemeModeChange -> updateNateega { it.copy(slimBarThemeMode = action.value) }
+            is WidgetSettingsUiAction.OnSlimBarShowCityToggle -> updateNateega { it.copy(slimBarShowCity = action.value) }
+            is WidgetSettingsUiAction.OnSlimBarDateOrderChange -> updateNateega { it.copy(slimBarDateOrder = action.value) }
+            is WidgetSettingsUiAction.OnMosqueArchThemeModeChange -> updateNateega { it.copy(mosqueArchThemeMode = action.value) }
+            is WidgetSettingsUiAction.OnSmartPillThemeModeChange -> updateNateega { it.copy(smartPillThemeMode = action.value) }
+            is WidgetSettingsUiAction.OnSmartPillShowWordBadgeToggle -> updateNateega { it.copy(smartPillShowWordBadge = action.value) }
+            is WidgetSettingsUiAction.OnShowSpiritualPillNotificationToggle -> updateNateega { it.copy(showSpiritualPillNotification = action.value) }
+            is WidgetSettingsUiAction.OnSpiritualCapsuleModeChange -> updateNateega { it.copy(spiritualCapsuleMode = action.value) }
+            is WidgetSettingsUiAction.OnCustomDhikrToggle -> updateNateega { it.copy(customDhikrEnabled = action.value) }
+            is WidgetSettingsUiAction.OnCustomDhikrTimeChange -> updateNateega { it.copy(customDhikrTimeMinutes = action.minutes) }
+            is WidgetSettingsUiAction.OnCustomDhikrTextChange -> updateNateega { it.copy(customDhikrText = action.text) }
+        }
+    }
+
+    private fun updateNateega(transform: (com.github.meypod.al_azan.core.domain.model.widget.NateegaWidgetConfig) -> com.github.meypod.al_azan.core.domain.model.widget.NateegaWidgetConfig) {
+        viewModelScope.launch {
+            nateegaConfigRepository.update(transform)
         }
     }
 

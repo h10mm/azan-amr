@@ -67,12 +67,9 @@ fun rememberLocationAccessHelperDialogs(
         }
     }
 
-    // ACCESS_BACKGROUND_LOCATION only exists on API 29+. Below that, background access is implicit
-    // with the foreground grant, so the foreground permission is sufficient on its own.
-    val backgroundGranted = {
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
-            context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
-    }
+    // Background location permission has been removed for privacy & Play Store compliance;
+    // foreground location on-demand is always sufficient.
+    val backgroundGranted = { true }
 
     // On API 30+ the system routes this to the app's location settings ("Allow all the time")
     // rather than an in-app dialog; the result is delivered back here once the user returns.
@@ -84,8 +81,10 @@ fun rememberLocationAccessHelperDialogs(
         }
     }
 
-    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted || context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+        val fineGranted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarseGranted = results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (fineGranted || coarseGranted || LocationUtils.hasLocationPermission(context)) {
             // Background location must be requested separately, only after the foreground grant. Show
             // the rationale first so the user isn't dropped into system settings without context.
             if (requireBackground && !backgroundGranted()) {
@@ -102,10 +101,21 @@ fun rememberLocationAccessHelperDialogs(
         }
     }
 
+    val requestForegroundPermissions = remember {
+        {
+            permLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+            )
+        }
+    }
+
     val activityLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (LocationUtils.isLocationEnabled(context)) {
             showLocationDisabledDialog.value = false
-            permLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            requestForegroundPermissions()
         }
     }
 
@@ -116,7 +126,7 @@ fun rememberLocationAccessHelperDialogs(
             if (!LocationUtils.isLocationEnabled(context)) {
                 if (showFeedbackForPendingRequest.value) showLocationDisabledDialog.value = true
             } else {
-                permLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                requestForegroundPermissions()
             }
         }
     }

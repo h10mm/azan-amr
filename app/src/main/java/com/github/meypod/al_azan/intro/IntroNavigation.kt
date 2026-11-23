@@ -8,36 +8,26 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -47,9 +37,9 @@ import com.github.meypod.al_azan.core.presentation.AlAzanTheme
 import com.github.meypod.al_azan.core.presentation.components.AppSnackbarHost
 import com.github.meypod.al_azan.core.presentation.components.BlockingProgressDialog
 import com.github.meypod.al_azan.core.presentation.components.LocalSnackbarController
-import com.github.meypod.al_azan.core.presentation.components.SecondaryButton
-import com.github.meypod.al_azan.core.presentation.components.TertiaryButton
 import com.github.meypod.al_azan.core.presentation.components.TimedDangerDialog
+import com.github.meypod.al_azan.core.presentation.components.ZenBottomCtaBar
+import com.github.meypod.al_azan.core.presentation.components.ZenStepTopBar
 import com.github.meypod.al_azan.core.presentation.navigation.BindBackStackWithController
 import com.github.meypod.al_azan.core.presentation.navigation.Route
 import com.github.meypod.al_azan.core.presentation.navigation.navigateTo
@@ -58,19 +48,15 @@ import com.github.meypod.al_azan.core.presentation.navigation.rootRedirectFallba
 import com.github.meypod.al_azan.core.presentation.navigation.routeSavedStateConfiguration
 import com.github.meypod.al_azan.core.presentation.util.drawVerticalScrollbar
 import com.github.meypod.al_azan.core.presentation.util.fadeScrollEdges
-import com.github.meypod.al_azan.core.presentation.util.patternedBackground
-import com.github.meypod.al_azan.core.presentation.util.rememberPatternImageBitmap
-import com.github.meypod.al_azan.intro.components.IntroSkipButton
+import com.github.meypod.al_azan.intro.adhan.IntroAdhanStep
 import com.github.meypod.al_azan.intro.components.IntroTitle
 import com.github.meypod.al_azan.intro.languageselection.LanguageSelectionScreen
 import com.github.meypod.al_azan.intro.languageselection.LanguageSelectionViewModel
+import com.github.meypod.al_azan.intro.location.IntroLocationStep
+import com.github.meypod.al_azan.intro.location.IntroLocationViewModel
 import com.github.meypod.al_azan.intro.restorebackup.RestoreBackupScreen
-import com.github.meypod.al_azan.main.location.LocationScreenContent
-import com.github.meypod.al_azan.main.location.LocationUiAction
-import com.github.meypod.al_azan.main.location.LocationViewModel
 import com.github.meypod.al_azan.main.settings.adhan.AdhanSettingsViewModel
 import com.github.meypod.al_azan.main.settings.adhan.PrayerScheduleScreen
-import com.github.meypod.al_azan.main.settings.adhan.ScheduleAndMuezzinContent
 import com.github.meypod.al_azan.main.settings.calculation.CalculationSettingsScreen
 import com.github.meypod.al_azan.main.settings.calculation.CalculationSettingsViewModel
 import com.github.meypod.al_azan.main.settings.calculation.adjustments.AdjustmentsScreen
@@ -81,6 +67,8 @@ import com.github.meypod.al_azan.main.settings.troubleshoot.TroubleshootScreen
 import com.github.meypod.al_azan.main.settings.troubleshoot.TroubleshootViewModel
 import com.github.meypod.al_azan.main.settings.troubleshoot.advanced.AdvancedTroubleshootScreen
 import com.github.meypod.al_azan.main.settings.troubleshoot.advanced.AdvancedTroubleshootViewModel
+import com.github.meypod.al_azan.main.settings.widget.WidgetSettingsUiAction
+import com.github.meypod.al_azan.main.settings.widget.WidgetSettingsViewModel
 
 @Composable
 fun IntroNavigation(onFinishIntro: () -> Unit) {
@@ -94,7 +82,6 @@ fun IntroNavigation(onFinishIntro: () -> Unit) {
 
     val introViewModel = hiltViewModel<IntroViewModel>()
     val introUiState by introViewModel.uiState.collectAsStateWithLifecycle()
-    val introBackgroundColor = colorResource(R.color.intro_background)
 
     BindBackStackWithController(
         currentRoute = introBackstack::lastOrNull,
@@ -114,7 +101,7 @@ fun IntroNavigation(onFinishIntro: () -> Unit) {
         backStack = introBackstack,
         modifier = Modifier
             .fillMaxSize()
-            .background(introBackgroundColor),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center,
         transitionSpec = {
             slideInHorizontally(
@@ -156,11 +143,18 @@ fun IntroNavigation(onFinishIntro: () -> Unit) {
                 entry<Route.Intro.LanguageSelection> {
                     val viewModel = hiltViewModel<LanguageSelectionViewModel>()
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                    LanguageSelectionScreen(
-                        uiState = uiState,
-                        onAction = viewModel::onAction,
-                        onIntroAction = introViewModel::onAction,
-                    )
+                    IntroStepScaffold(
+                        uiState = introUiState,
+                        onAction = introViewModel::onAction,
+                    ) { modifier ->
+                        LanguageSelectionScreen(
+                            uiState = uiState,
+                            onAction = viewModel::onAction,
+                            onIntroAction = introViewModel::onAction,
+                            modifier = modifier,
+                            restoring = introUiState.restoring,
+                        )
+                    }
                 }
                 entry<Route.Intro.RestoreBackup> {
                     IntroStepScaffold(
@@ -175,41 +169,27 @@ fun IntroNavigation(onFinishIntro: () -> Unit) {
                     }
                 }
                 entry<Route.Intro.Location> {
-                    val viewModel = hiltViewModel<LocationViewModel>()
-                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val locationViewModel = hiltViewModel<IntroLocationViewModel>()
+                    val locationState by locationViewModel.uiState.collectAsStateWithLifecycle()
+                    val calcViewModel = hiltViewModel<CalculationSettingsViewModel>()
+                    val calcState by calcViewModel.uiState.collectAsStateWithLifecycle()
                     IntroStepScaffold(
                         uiState = introUiState,
                         onAction = introViewModel::onAction,
-                        floatingActionButton = {
-                            if (uiState.locations.isNotEmpty()) {
-                                FloatingActionButton(
-                                    onClick = {
-                                        viewModel.onAction(LocationUiAction.OnNewLocationClick)
-                                    },
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                ) {
-                                    Icon(
-                                        painterResource(R.drawable.add),
-                                        contentDescription = stringResource(R.string.add_new_location_button),
-                                    )
-                                }
-                            }
-                        },
                     ) { modifier ->
-                        Column(
-                            modifier,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-                        ) {
-                            IntroTitle(R.string.location_title)
-                            LocationScreenContent(
-                                uiState = uiState,
-                                onAction = viewModel::onAction,
-                                getCountries = viewModel::getCountries,
-                                getCities = viewModel::getCities,
-                            )
-                        }
+                        IntroLocationStep(
+                            uiState = locationState,
+                            calculationState = calcState,
+                            onQueryChange = locationViewModel::onQueryChange,
+                            onQuickCitySelected = locationViewModel::onQuickCitySelected,
+                            onCitySelected = locationViewModel::onCitySelected,
+                            onGpsLocation = locationViewModel::onGpsLocation,
+                            onDialogConfirm = locationViewModel::onDialogConfirm,
+                            onCalculationAction = calcViewModel::onAction,
+                            getCountries = locationViewModel::getCountries,
+                            getCities = locationViewModel::getCities,
+                            modifier = modifier,
+                        )
                     }
                 }
                 entry<Route.Intro.Calculation> {
@@ -253,22 +233,26 @@ fun IntroNavigation(onFinishIntro: () -> Unit) {
                 entry<Route.Intro.Adhan> {
                     val viewModel = hiltViewModel<AdhanSettingsViewModel>()
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val widgetVm = hiltViewModel<WidgetSettingsViewModel>()
+                    val widgetState by widgetVm.uiState.collectAsStateWithLifecycle()
                     IntroStepScaffold(
                         uiState = introUiState,
                         onAction = introViewModel::onAction,
                     ) { modifier ->
-                        Column(
-                            modifier,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-                        ) {
-                            IntroTitle(R.string.schedule_and_muezzin_title)
-                            ScheduleAndMuezzinContent(
-                                uiState = uiState,
-                                onAction = viewModel::onAction,
-                                prayerScheduleRoute = { Route.Intro.Adhan.PrayerSchedule(it) },
-                            )
-                        }
+                        IntroAdhanStep(
+                            uiState = uiState,
+                            onAction = viewModel::onAction,
+                            capsuleEnabled = widgetState.nateegaConfig.showSpiritualPillNotification,
+                            onCapsuleToggle = { enabled ->
+                                widgetVm.onAction(WidgetSettingsUiAction.OnShowSpiritualPillNotificationToggle(enabled))
+                            },
+                            persistentNotifEnabled = widgetState.settings.showWidget,
+                            onPersistentNotifToggle = { enabled ->
+                                widgetVm.onAction(WidgetSettingsUiAction.OnShowNotificationWidgetToggle(enabled))
+                            },
+                            prayerScheduleRoute = { Route.Intro.Adhan.PrayerSchedule(it) },
+                            modifier = modifier,
+                        )
                     }
                 }
                 entry<Route.Intro.Adhan.PrayerSchedule> { key ->
@@ -283,22 +267,22 @@ fun IntroNavigation(onFinishIntro: () -> Unit) {
                 entry<Route.Intro.Troubleshoot> {
                     val viewModel = hiltViewModel<TroubleshootViewModel>()
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val advancedViewModel = hiltViewModel<AdvancedTroubleshootViewModel>()
+                    val advancedState by advancedViewModel.uiState.collectAsStateWithLifecycle()
                     IntroStepScaffold(
                         uiState = introUiState,
                         onAction = introViewModel::onAction,
                     ) { modifier ->
-                        Column(
-                            modifier,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-                        ) {
-                            IntroTitle(R.string.troubleshoot_title)
-                            TroubleshootScreen(
-                                uiState = uiState,
-                                onAction = viewModel::onAction,
-                                advancedRoute = Route.Intro.Troubleshoot.AdvancedTroubleshoot,
-                            )
-                        }
+                        TroubleshootScreen(
+                            uiState = uiState,
+                            onAction = viewModel::onAction,
+                            modifier = modifier,
+                            advancedUiState = advancedState,
+                            onAdvancedAction = advancedViewModel::onAction,
+                            advancedRoute = Route.Intro.Troubleshoot.AdvancedTroubleshoot,
+                            showAdvancedLink = false,
+                            showIntroHeader = true,
+                        )
                     }
                 }
                 entry<Route.Intro.Troubleshoot.AdvancedTroubleshoot> {
@@ -332,6 +316,11 @@ fun IntroNavigation(onFinishIntro: () -> Unit) {
             snackbarController.show(resources.getString(R.string.restore_failed))
         }
     }
+    LaunchedEffect(introViewModel.locationRequired) {
+        introViewModel.locationRequired.collect {
+            snackbarController.show(resources.getString(R.string.intro_location_required))
+        }
+    }
 }
 
 @Composable
@@ -342,104 +331,64 @@ private fun IntroStepScaffold(
     floatingActionButton: @Composable (() -> Unit) = {},
     content: @Composable (Modifier) -> Unit,
 ) {
-    val patternImage = rememberPatternImageBitmap(R.drawable.pattern)
     val scrollState = rememberScrollState()
-    val introBackgroundColor = colorResource(R.color.intro_background)
+
+    val nextButtonLabel = when (uiState.route) {
+        Route.Intro.LanguageSelection -> "ابدأ الإعداد السريع"
+        Route.Intro.Location -> "التالي: المؤذن والكبسولة"
+        Route.Intro.Adhan -> "التالي: درع الجاهزية"
+        Route.Intro.Troubleshoot -> "دخول التطبيق الآن 🕌"
+        else -> stringResource(if (uiState.isLastStep) R.string.finish_button else R.string.next_button)
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            ZenStepTopBar(
+                currentStep = uiState.step,
+                totalSteps = uiState.totalSteps,
+                showSkip = !uiState.isLastStep,
+                skipLabel = "تخطي الإعداد",
+                onSkipClick = { onAction(IntroUiAction.OnSkipClick) },
+                title = if (uiState.route == Route.Intro.Troubleshoot) stringResource(R.string.troubleshoot_title) else null,
+            )
+        },
         bottomBar = {
-            IntroBottomBar(
-                uiState = uiState,
-                onAction = onAction,
+            ZenBottomCtaBar(
+                nextLabel = nextButtonLabel,
+                onNextClick = {
+                    if (uiState.isLastStep) {
+                        onAction(IntroUiAction.OnFinishClick)
+                    } else {
+                        onAction(IntroUiAction.OnNextClick)
+                    }
+                },
+                showBack = uiState.step > 0,
+                onBackClick = { onAction(IntroUiAction.OnBackClick) },
             )
         },
         snackbarHost = { AppSnackbarHost(LocalSnackbarController.current.hostState) },
-        containerColor = introBackgroundColor,
+        containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = floatingActionButton,
     ) { paddingValues ->
         val baseModifier =
             Modifier
                 .fillMaxSize()
-                .patternedBackground(
-                    pattern = patternImage,
-                    backgroundColor = introBackgroundColor,
-                    patternAlpha = 0.03f,
-                )
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
 
         val contentModifier =
             if (scrollable) {
                 baseModifier
                     .fadeScrollEdges(scrollState, Orientation.Vertical)
-                    .drawVerticalScrollbar(scrollState, barColor = @Composable { MaterialTheme.colorScheme.onPrimary })
+                    .drawVerticalScrollbar(scrollState, barColor = @Composable { MaterialTheme.colorScheme.primary })
                     .verticalScroll(scrollState)
             } else {
                 baseModifier
-            }.padding(dimensionResource(R.dimen.page_padding))
+            }.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
 
         content(contentModifier)
-    }
-}
-
-@Composable
-private fun IntroBottomBar(
-    uiState: IntroUiState,
-    onAction: (IntroUiAction) -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(
-                horizontal = dimensionResource(R.dimen.page_padding),
-                vertical = dimensionResource(R.dimen.element_padding),
-            ),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-    ) {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalArrangement = Arrangement.Center,
-            itemVerticalAlignment = Alignment.CenterVertically,
-        ) {
-            SecondaryButton(
-                onClick = {
-                    onAction(IntroUiAction.OnBackClick)
-                },
-            ) {
-                Text(stringResource(R.string.back_button))
-            }
-            IntroSkipButton {
-                onAction(IntroUiAction.OnSkipClick)
-            }
-            if (uiState.isLastStep) {
-                TertiaryButton(
-                    onClick = {
-                        onAction(IntroUiAction.OnFinishClick)
-                    },
-                ) {
-                    Text(stringResource(R.string.finish_button))
-                }
-            } else {
-                TertiaryButton(
-                    onClick = {
-                        onAction(IntroUiAction.OnNextClick)
-                    },
-                ) {
-                    Text(stringResource(R.string.next_button))
-                }
-            }
-        }
-
-        LinearProgressIndicator(
-            progress = { uiState.progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp),
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-            trackColor = MaterialTheme.colorScheme.tertiary,
-        )
     }
 }
 
@@ -453,27 +402,5 @@ private fun IntroStepScaffoldPreview() {
         ) {
             Column(it) { }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun IntroBottomBarEmptyPreview() {
-    AlAzanTheme {
-        IntroBottomBar(
-            uiState = IntroUiState(route = Route.Intro.LanguageSelection),
-            onAction = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun IntroBottomBarFilledPreview() {
-    AlAzanTheme {
-        IntroBottomBar(
-            uiState = IntroUiState(route = Route.Intro.RestoreBackup),
-            onAction = {},
-        )
     }
 }

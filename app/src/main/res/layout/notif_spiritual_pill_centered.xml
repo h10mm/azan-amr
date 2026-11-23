@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/widget_smart_pill_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layoutDirection="rtl"
+    android:orientation="vertical"
+    android:paddingStart="12dp"
+    android:paddingTop="4dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="4dp">
+
+    <!-- Row 1: Balanced Title (up to 2 lines so titles never get clipped) -->
+    <TextView
+        android:id="@+id/smart_pill_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:includeFontPadding="false"
+        android:maxLines="2"
+        android:textColor="@color/notif_seamless_title"
+        android:textSize="14.5sp"
+        android:textStyle="bold"
+        tools:text="صلاة العشاء والوتر" />
+
+    <!-- Row 2: Subtitle (clean 2 lines for complete Hadith/Dua/Reminder) -->
+    <TextView
+        android:id="@+id/smart_pill_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:includeFontPadding="false"
+        android:lineSpacingExtra="1.5dp"
+        android:maxLines="2"
+        android:textColor="@color/notif_seamless_sub"
+        android:textSize="12sp"
+        tools:text="أوتروا يا أهل القرآن • ركعة وتر تضيء ليلتك" />
+
+</LinearLayout>

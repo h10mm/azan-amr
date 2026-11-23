@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/pre_adhan_notif_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:layoutDirection="rtl"
+    android:orientation="vertical"
+    android:paddingStart="12dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="8dp">
+
+    <!-- Line 1: عنوان التنبيه مدمج معه الوقت بانسيابية طبيعية (Full width, Bold, High Contrast) -->
+    <TextView
+        android:id="@+id/pre_adhan_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textColor="@color/notif_seamless_title"
+        android:textSize="19sp"
+        android:textStyle="bold"
+        tools:text="اقتراب موعد صلاة الفجر (04:52 ص)" />
+
+    <!-- Line 2: العبارة التوضيحية الهادئة الواضحة -->
+    <TextView
+        android:id="@+id/pre_adhan_sub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:ellipsize="end"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textColor="@color/notif_seamless_sub"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="استعد للوضوء وصلاة الجماعة" />
+
+</LinearLayout>

@@ -5,4 +5,6 @@ import com.github.meypod.al_azan.core.domain.model.calculation.CalculationLocati
 sealed interface QiblaCompassUiAction {
     data object OnToggleOrientationLock : QiblaCompassUiAction
     data class OnLocationFetched(val detail: CalculationLocationDetail) : QiblaCompassUiAction
+    data object OnDiagnosticsClick : QiblaCompassUiAction
+    data object OnDismissDiagnostics : QiblaCompassUiAction
 }

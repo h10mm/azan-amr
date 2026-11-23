@@ -42,11 +42,6 @@ fun CompactOutlinedTextField(
     placeholder: String = "",
     enabled: Boolean = true,
     readOnly: Boolean = false,
-    /**
-     * Renders the field as a static, non-editable display (no [BasicTextField]). Used for
-     * dropdown triggers so the node carries no text-edit semantics (editbox / read-only) that
-     * would otherwise leak to TalkBack, and so it never captures focus from autofill.
-     */
     displayOnly: Boolean = false,
     colors: TextFieldColors = OutlinedTextFieldDefaults.colors(),
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
@@ -76,8 +71,6 @@ fun CompactOutlinedTextField(
         )
     }
 
-    // Identical to the decorationBox slot Material wires into OutlinedTextField; rendered either
-    // inside BasicTextField (editable) or standalone (displayOnly) so visuals stay the same.
     val decoration: @Composable (@Composable () -> Unit) -> Unit = { innerTextField ->
         OutlinedTextFieldDefaults.DecorationBox(
             value = fValue,
@@ -110,21 +103,12 @@ fun CompactOutlinedTextField(
                     unfocusedBorderThickness = OutlinedTextFieldDefaults.UnfocusedBorderThickness,
                 )
             },
-            trailingIcon = trailingIcon?.let {
-                {
-                    Box(Modifier.padding(end = 8.dp)) {
-                        it()
-                    }
-                }
-            },
+            trailingIcon = trailingIcon,
         )
     }
 
     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
         if (displayOnly) {
-            // propagateMinConstraints forwards the (full-width) min constraints to DecorationBox,
-            // matching how BasicTextField stretches its decoration; without it the box would
-            // shrink to content width.
             Box(modifier, propagateMinConstraints = true) { decoration(staticText) }
         } else {
             BasicTextField(
@@ -156,46 +140,30 @@ private fun CompactOutlinedTextFieldPreview() {
             CompactOutlinedTextField(
                 value = "",
                 onValueChange = {},
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 placeholder = "Placeholder",
-                label = {
-                    Text("Label")
-                },
+                label = { Text("Label") },
             )
             CompactOutlinedTextField(
                 value = "",
                 onValueChange = {},
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 placeholder = "Placeholder",
-                label = {
-                    Text("Label")
-                },
+                label = { Text("Label") },
                 fixedLabel = true,
             )
-
             CompactOutlinedTextField(
                 value = "foo",
                 onValueChange = {},
-                modifier = Modifier
-                    .fillMaxWidth(),
-                label = {
-                    Text("Label")
-                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Label") },
             )
-
             CompactOutlinedTextField(
                 value = "",
                 onValueChange = {},
-                modifier = Modifier
-                    .fillMaxWidth(),
-                label = {
-                    Text("Label")
-                },
-                supportingText = {
-                    Text("supporting text")
-                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Label") },
+                supportingText = { Text("supporting text") },
             )
         }
     }

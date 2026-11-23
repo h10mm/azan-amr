@@ -24,4 +24,12 @@ sealed interface HomeUiAction {
     object OnAboutLinkClick : HomeUiAction
     object OnMonthlyViewClick : HomeUiAction
     object OnDeveloperLinkClick : HomeUiAction
+
+    // اختصارات الرأس العلوية الجديدة
+    object OnSilenceShortcutClick : HomeUiAction
+    object OnThemeToggleShortcutClick : HomeUiAction
+    object OnNateegaShortcutClick : HomeUiAction
+
+    // الأمر الجديد الذي أضفناه للتقويم في الشاشة الرئيسية
+    object OnCalendarClick : HomeUiAction
 }

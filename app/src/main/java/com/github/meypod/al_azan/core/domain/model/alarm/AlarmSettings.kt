@@ -9,8 +9,8 @@ import kotlin.time.Instant
 data class AlarmSettings(
     val showNextPrayerTime: Boolean = false,
     val dontNotifyUpcoming: Boolean = false,
-    val preAlarmMinutesBefore: Int = 60,
-    val dontTurnOnScreen: Boolean = false,
+    val preAlarmMinutesBefore: Int = 15,
+    val dontTurnOnScreen: Boolean = true,
     val vibrationMode: VibrationMode = VibrationMode.Once,
     /** When true, dismissing a fired adhan automatically silences the phone (DND) for [autoSilentDurationMinutes]. */
     val autoSilentOnDismiss: Boolean = false,

@@ -11,6 +11,8 @@ class SettingsRepositoryImpl(
     override val data: Flow<Settings>
         get() = settingsDatastore.data
 
+    override fun getLatest(): Settings = settingsDatastore.data.value
+
     override suspend fun fetch(): Settings = settingsDatastore.data.value
 
     override suspend fun update(transform: (t: Settings) -> Settings) {

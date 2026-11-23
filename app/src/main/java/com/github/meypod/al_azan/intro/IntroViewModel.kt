@@ -4,6 +4,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.meypod.al_azan.core.domain.model.alarm.withDefaultAdhanSchedule
+import com.github.meypod.al_azan.core.domain.repository.AlarmSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.BackupRepository
 import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
@@ -24,6 +26,7 @@ class IntroViewModel
 constructor(
     private val settingsRepository: SettingsRepository,
     private val calculationSettingsRepository: CalculationSettingsRepository,
+    private val alarmSettingsRepository: AlarmSettingsRepository,
     private val backupRepository: BackupRepository,
 ) : ViewModel() {
 
@@ -37,6 +40,10 @@ constructor(
     /** Emits when a restore fails, so the UI can surface a message; success navigates away instead. */
     private val _restoreErrors = Channel<Unit>()
     val restoreErrors = _restoreErrors.receiveAsFlow()
+
+    /** Emits when "Next" is pressed on the location step before any location was chosen. */
+    private val _locationRequired = Channel<Unit>(Channel.CONFLATED)
+    val locationRequired = _locationRequired.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -71,7 +78,7 @@ constructor(
     private fun onSkipConfirmed() {
         _uiState.update { it.copy(busy = true, showSkipDialog = false) }
         viewModelScope.launch {
-            settingsRepository.update { current -> current.copy(appIntroDone = true) }
+            completeIntro()
             _uiState.update { it.copy(busy = false) }
         }
     }
@@ -85,21 +92,44 @@ constructor(
 
     private fun onNextClick() {
         if (uiState.value.busy) return
-        uiState.value.nextRoute?.let {
-            NavigationController.navigateTo(it)
+        val next = uiState.value.nextRoute ?: return
+        // Leaving the location step without a location would leave prayer times uncomputable and the
+        // adhan unscheduled — ask for one instead (the Skip button remains for those who really want out).
+        if (uiState.value.route == Route.Intro.Location) {
+            viewModelScope.launch {
+                if (calculationSettingsRepository.fetch().locationId == null) {
+                    _locationRequired.trySend(Unit)
+                } else {
+                    NavigationController.navigateTo(next)
+                }
+            }
+            return
         }
+        NavigationController.navigateTo(next)
     }
 
     private fun onFinishClick() {
         viewModelScope.launch {
             val calcSettings = calculationSettingsRepository.fetch()
             if (calcSettings.locationId != null && calcSettings.parameters != null) {
-                settingsRepository.update { it.copy(appIntroDone = true) }
+                completeIntro()
             } else {
                 onAction(IntroUiAction.OnSkipClick)
             }
         }
     }
+
+    /**
+     * Ends onboarding. Arms the adhan for the five daily prayers (sound + notification + the default
+     * vibration) *before* flipping `appIntroDone`, so by the time Home is on screen the settings are in
+     * place and the scheduler / permission re-check already see an enabled adhan. Does nothing to a
+     * schedule the user (or a restored backup) already configured — see [withDefaultAdhanSchedule].
+     */
+    private suspend fun completeIntro() {
+        alarmSettingsRepository.update { it.withDefaultAdhanSchedule() }
+        settingsRepository.update { it.copy(appIntroDone = true) }
+    }
+
 
     private fun onRouteVisible(route: Route) {
         _uiState.update { state ->

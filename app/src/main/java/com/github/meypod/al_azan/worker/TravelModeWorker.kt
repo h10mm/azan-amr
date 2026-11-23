@@ -60,15 +60,7 @@ constructor(
                 ),
             )
         } else if (
-            applicationContext.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-            // The worker grabs the location while the app is closed, so it needs background access
-            // ("Allow all the time") on API 29+. Without it, the location request silently yields
-            // nothing, so surface the same prompt as a revoked permission instead of failing quietly.
-            (
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                    applicationContext.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) !=
-                    PackageManager.PERMISSION_GRANTED
-                )
+            applicationContext.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
         ) {
             notificationRepository.notify(
                 NotificationConfig(

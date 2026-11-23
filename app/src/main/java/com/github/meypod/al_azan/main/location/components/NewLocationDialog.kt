@@ -123,9 +123,19 @@ private fun NewLocationDialogContent(
 
     var uiState by remember { mutableStateOf(uiState) }
 
-    val latValue = remember(uiState.latitude) { uiState.latitude.trim().toEnglishDigits().toDoubleOrNull() }
-    val lngValue = remember(uiState.longitude) { uiState.longitude.trim().toEnglishDigits().toDoubleOrNull() }
-    val labelValue = remember(uiState.label) { uiState.label.trim() }
+    val latValue = remember(uiState.latitude) {
+        uiState.latitude.trim().toEnglishDigits().toDoubleOrNull()?.takeIf { it in -90.0..90.0 }
+    }
+    val lngValue = remember(uiState.longitude) {
+        uiState.longitude.trim().toEnglishDigits().toDoubleOrNull()?.takeIf { it in -180.0..180.0 }
+    }
+    val labelValue = remember(uiState.label) {
+        uiState.label
+            .filter { !it.isISOControl() }
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .take(80)
+    }
 
     val triggerLocation = rememberLocationAccessHelperDialogs(
         onLocation = {

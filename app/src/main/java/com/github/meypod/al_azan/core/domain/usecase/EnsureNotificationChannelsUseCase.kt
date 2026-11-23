@@ -1,21 +1,50 @@
 package com.github.meypod.al_azan.core.domain.usecase
 
+import android.content.Context
+import androidx.core.net.toUri
 import com.github.meypod.al_azan.R
+import com.github.meypod.al_azan.core.data.audio.toAudioUri
 import com.github.meypod.al_azan.core.domain.model.TextResource
+import com.github.meypod.al_azan.core.domain.model.adhan.AdhanKey
 import com.github.meypod.al_azan.core.domain.model.notification.AndroidNotificationImportance
 import com.github.meypod.al_azan.core.domain.model.notification.NotificationChannelConfig
+import com.github.meypod.al_azan.core.domain.model.settings.SILENT_AUDIO_ID
 import com.github.meypod.al_azan.core.domain.repository.NotificationChannelManager
+import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 class EnsureNotificationChannelsUseCase @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val channelManager: NotificationChannelManager,
+    private val settingsRepository: SettingsRepository,
 ) {
     companion object {
         const val PERMISSION_REVOKED_CHANNEL_ID = "permission_revoked_channel_id"
         const val TRAVEL_MODE_CHANNEL_ID = "travel_mode_channel_id"
-        const val WIDGET_CHANNEL_ID = "widget_channel_id"
-        const val ADHAN_CHANNEL_ID = "adhan_channel_id"
-        const val ADHAN_DND_CHANNEL_ID = "adhan_dnd_channel_id"
+        const val WIDGET_CHANNEL_ID = "widget_shade_channel_v1"
+        private val LEGACY_WIDGET_CHANNEL_IDS = listOf(
+            "widget_channel_id",
+            "widget_channel_v1",
+            "widget_channel_v2",
+            "widget_channel_v6",
+        )
+        const val ADHAN_CHANNEL_ID = "adhan_shade_channel_v5"
+        const val ADHAN_DND_CHANNEL_ID = "adhan_dnd_shade_channel_v5"
+        private val LEGACY_ADHAN_CHANNEL_IDS = listOf(
+            "adhan_channel_id",
+            "adhan_dnd_channel_id",
+            "adhan_channel_high_v2",
+            "adhan_dnd_channel_high_v2",
+            "adhan_native_channel_v1",
+            "adhan_dnd_native_channel_v1",
+            "adhan_shade_channel_v3",
+            "adhan_dnd_shade_channel_v3",
+            "adhan_shade_channel_v4",
+            "adhan_dnd_shade_channel_v4",
+        )
         const val PRE_ADHAN_CHANNEL_ID = "pre_adhan_channel_id"
         const val ADHAN_REMIND_CHANNEL_ID = "adhan_remind_channel_id"
         const val REMINDER_CHANNEL_ID = "reminder_channel_id"
@@ -28,6 +57,16 @@ class EnsureNotificationChannelsUseCase @Inject constructor(
     }
 
     operator fun invoke() {
+        LEGACY_ADHAN_CHANNEL_IDS.forEach { channelManager.deleteChannel(it) }
+        LEGACY_WIDGET_CHANNEL_IDS.forEach { channelManager.deleteChannel(it) }
+
+        val settings = runCatching { runBlocking { settingsRepository.data.first() } }.getOrNull()
+        val defaultAudioUri = "android.resource://${context.packageName}/${R.raw.amr}".toUri()
+        val soundEntry = settings?.selectedAdhanEntries?.get(AdhanKey.Default)
+            ?: settings?.savedAdhanAudioEntries?.firstOrNull()
+        val isSilent = soundEntry?.id == SILENT_AUDIO_ID
+        val adhanUri = if (isSilent) null else (soundEntry?.toAudioUri(context) ?: defaultAudioUri)
+
         channelManager.ensureChannelsExist(
             configs = listOf(
                 NotificationChannelConfig(
@@ -55,16 +94,18 @@ class EnsureNotificationChannelsUseCase @Inject constructor(
                     id = ADHAN_CHANNEL_ID,
                     name = TextResource.StringResId(R.string.adhan_channel_name),
                     description = TextResource.StringResId(R.string.adhan_channel_description),
-                    importanceLevel = AndroidNotificationImportance.IMPORTANCE_MAX,
-                    // the playback service produces the sound + vibration; the channel itself stays silent
+                    importanceLevel = AndroidNotificationImportance.IMPORTANCE_DEFAULT,
+                    soundEnabled = false,
                     soundHandledExternally = true,
                     vibrationEnabled = false,
+                    canBypassDnd = true,
                 ),
                 NotificationChannelConfig(
                     id = ADHAN_DND_CHANNEL_ID,
                     name = TextResource.StringResId(R.string.adhan_dnd_channel_name),
                     description = TextResource.StringResId(R.string.adhan_dnd_channel_description),
-                    importanceLevel = AndroidNotificationImportance.IMPORTANCE_MAX,
+                    importanceLevel = AndroidNotificationImportance.IMPORTANCE_DEFAULT,
+                    soundEnabled = false,
                     soundHandledExternally = true,
                     vibrationEnabled = false,
                     canBypassDnd = true,

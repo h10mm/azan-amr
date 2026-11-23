@@ -19,6 +19,17 @@
     <color name="notif_active_prayer">#008205</color>
     <color name="notif_secondary_text_color">#de000000</color>
 
+    <!-- Modern Widget Colors (Light Mode) -->
+    <color name="widget_table_surface_bg">#F2FFFFFF</color>
+    <color name="widget_table_border">#20000000</color>
+    <color name="widget_slot_normal_bg">#0A000000</color>
+    <color name="widget_slot_normal_stroke">#12000000</color>
+    <color name="widget_slot_active_bg">#2010B981</color>
+    <color name="widget_slot_active_stroke">#10B981</color>
+    <color name="widget_countdown_bg">#1210B981</color>
+    <color name="widget_countdown_stroke">#2510B981</color>
+    <color name="widget_chronometer_color">#0284C7</color>
+
     <!-- Custom widget theme-adaptive defaults (mirror surfaceContainer / onSurface / active_prayer).
          Used when the user leaves a color unset; dark variants in values-night. -->
     <color name="custom_widget_bg">#FFEBEFEE</color>
@@ -27,4 +38,13 @@
 
     <!-- Green tick for a selected item in a multi-select list; brighter dark variant in values-night. -->
     <color name="checkmark_green">#FF008205</color>
+
+    <!-- Seamless Notification Colors (Light Mode) - High Contrast & Maximum Legibility -->
+    <color name="notif_seamless_title">#FF090D16</color>
+    <color name="notif_seamless_sub">#FF334155</color>
+    <color name="notif_seamless_badge_bg">#1810B981</color>
+    <color name="notif_seamless_badge_stroke">#3510B981</color>
+    <color name="notif_seamless_badge_text">#FF047857</color>
+    <color name="notif_seamless_reminder_text">#FFB45309</color>
+    <color name="splash_background">#111827</color>
 </resources>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/next_prayer_widget_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center">
+
+    <!-- Unified concentric canvas: Draws the outer track, the progress ring, and optional inner circle card together on 1:1 square canvas -->
+    <ImageView
+        android:id="@+id/next_prayer_canvas_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"
+        android:scaleType="fitCenter"
+        android:contentDescription="Next Prayer Circle" />
+
+    <!-- Centered content overlay perfectly centered with optimized margins -->
+    <LinearLayout
+        android:id="@+id/next_prayer_center_content"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/next_prayer_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:singleLine="true"
+            android:maxLines="1"
+            android:lines="1"
+            android:text="الفجر"
+            android:textStyle="bold"
+            android:textSize="21sp"
+            android:textColor="#FFFFFF"
+            android:shadowColor="#80000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            tools:ignore="HardcodedText" />
+
+        <TextView
+            android:id="@+id/next_prayer_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:gravity="center"
+            android:singleLine="true"
+            android:maxLines="1"
+            android:lines="1"
+            android:text="00:00"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:shadowColor="#80000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            tools:ignore="HardcodedText" />
+
+        <Chronometer
+            android:id="@+id/next_prayer_countdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/widget_chronometer_pill"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:paddingStart="7dp"
+            android:paddingEnd="7dp"
+            android:gravity="center"
+            android:singleLine="true"
+            android:maxLines="1"
+            android:lines="1"
+            android:countDown="true"
+            android:enabled="false"
+            android:textColor="@color/widget_chronometer_color"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1.5"
+            android:shadowRadius="4"
+            android:fontFamily="monospace" />
+
+    </LinearLayout>
+
+</RelativeLayout>

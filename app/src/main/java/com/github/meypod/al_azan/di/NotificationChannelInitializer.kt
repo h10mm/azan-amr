@@ -3,6 +3,7 @@ package com.github.meypod.al_azan.di
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.github.meypod.al_azan.core.domain.model.adhan.AdhanKey
 import com.github.meypod.al_azan.core.domain.repository.SettingsRepository
 import com.github.meypod.al_azan.core.domain.usecase.EnsureNotificationChannelsUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -33,7 +34,7 @@ class NotificationChannelInitializer @Inject constructor(
 
         scope.launch {
             settingsRepository.data
-                .map { it.selectedLocale }
+                .map { Pair(it.selectedLocale, it.selectedAdhanEntries) }
                 .distinctUntilChanged()
                 .collect { ensureChannels() }
         }

@@ -181,7 +181,19 @@ class ReminderViewModel @Inject constructor(
 
     private fun onToggleEnabled(action: ReminderUiAction.OnToggleEnabled) {
         viewModelScope.launch {
-            reminderRepository.update { list -> list.map { if (it.id == action.id) it.copy(enabled = action.enabled) else it } }
+            reminderRepository.update { list ->
+                val existing = list.firstOrNull { it.id == action.id }
+                if (existing != null) {
+                    list.map { if (it.id == action.id) it.copy(enabled = action.enabled) else it }
+                } else {
+                    val preset = com.github.meypod.al_azan.core.domain.model.reminder.SunnahPresets.list.firstOrNull { it.id == action.id }
+                    if (preset != null) {
+                        list + com.github.meypod.al_azan.core.domain.model.reminder.SunnahPresets.toReminder(preset, action.enabled)
+                    } else {
+                        list
+                    }
+                }
+            }
         }
     }
 

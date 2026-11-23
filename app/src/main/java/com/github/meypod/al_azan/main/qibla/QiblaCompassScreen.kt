@@ -2,29 +2,43 @@ package com.github.meypod.al_azan.main.qibla
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -34,126 +48,143 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
 import com.github.meypod.al_azan.R
 import com.github.meypod.al_azan.core.domain.model.calculation.CalculationLocationDetail
 import com.github.meypod.al_azan.core.domain.model.compass.CompassAccuracy
-import com.github.meypod.al_azan.core.domain.model.compass.CompassReading
-import com.github.meypod.al_azan.core.presentation.AlAzanThemePreview
+import com.github.meypod.al_azan.core.domain.repository.CompassDiagnostic
 import com.github.meypod.al_azan.core.presentation.DarkSuccess
 import com.github.meypod.al_azan.core.presentation.DarkWarning
 import com.github.meypod.al_azan.core.presentation.LightSuccess
 import com.github.meypod.al_azan.core.presentation.LightWarning
 import com.github.meypod.al_azan.core.presentation.components.ScreenScaffold
-import com.github.meypod.al_azan.core.presentation.dialog.rememberLocationAccessHelperDialogs
 import com.github.meypod.al_azan.core.presentation.navigation.NavigationController
 import com.github.meypod.al_azan.core.util.android.LocationUtils
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.roundToInt
+import kotlin.math.sin
+
+enum class CompassDisplayMode {
+    CLASSIC_DIAL,
+    DIRECT_POINTER,
+}
+
+private fun normalize360(deg: Float): Float = ((deg % 360f) + 360f) % 360f
+
+private fun shortestAngleDelta(from: Float, to: Float): Float {
+    val a = normalize360(from)
+    val b = normalize360(to)
+    return ((b - a + 540f) % 360f) - 180f
+}
 
 /**
- * Stateful entry point: collects the hot compass [readings] stream (lifecycle-aware) into local UI
- * state, then renders the stateless [QiblaCompassScreen]. Keeping the [StateFlow] out of the
- * stateless screen keeps that screen preview-friendly and matches the project's MVI convention
- * (state in, events out).
+ * محرك حركة نابض فيزيائي مثبّط (Critically Damped Spring) يعمل بسرعة شاشة الهاتف
+ * يمنع أي ارتعاش أو قفزات ويجعل البوصلة ناعمة كالبوصلة السائلة.
  */
 @Composable
-fun QiblaCompassRoute(
-    uiState: QiblaCompassUiState,
-    readings: StateFlow<CompassReading?>,
-    onAction: (QiblaCompassUiAction) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val heading = remember { mutableFloatStateOf(0f) }
-    var accuracy by remember { mutableStateOf(CompassAccuracy.UNRELIABLE) }
+private fun rememberFluidAngle(targetProvider: () -> Float): Float {
+    var position by remember { mutableFloatStateOf(normalize360(targetProvider())) }
+    var initialized by remember { mutableStateOf(false) }
 
-    val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(readings, lifecycleOwner) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            readings.collect { reading ->
-                if (reading != null) {
-                    heading.floatValue = reading.headingDegrees
-                    accuracy = reading.accuracy
-                }
+    LaunchedEffect(Unit) {
+        var velocity = 0f
+        val omega = 12.0f // استجابة فيزيائية سريعة وسلسة بدون اهتزاز
+        var lastNanos = withFrameNanos { it }
+
+        while (true) {
+            val nowNanos = withFrameNanos { it }
+            val dt = ((nowNanos - lastNanos) / 1_000_000_000f).coerceIn(0.001f, 0.05f)
+            lastNanos = nowNanos
+
+            val target = normalize360(targetProvider())
+            if (!initialized && target != 0f) {
+                position = target
+                velocity = 0f
+                initialized = true
+                continue
+            }
+
+            val displacement = shortestAngleDelta(position, target)
+
+            if (abs(displacement) < 0.03f && abs(velocity) < 0.08f) {
+                position = target
+                velocity = 0f
+            } else {
+                // معادلة النابض المثبّط حرجاً بدون أي ارتداد زائد
+                val expFactor = exp(-omega * dt)
+                val newVelocity = (velocity - omega * omega * displacement * dt) * expFactor
+                val newDisplacement = (displacement + (velocity + omega * displacement) * dt) * expFactor
+                position = normalize360(target - newDisplacement)
+                velocity = newVelocity
             }
         }
     }
 
-    QiblaCompassScreen(
-        uiState = uiState,
-        accuracy = accuracy,
-        // Lambda, not a value: the dial reads it inside graphicsLayer (deferred to the draw phase),
-        // so per-frame heading changes never trigger recomposition.
-        headingProvider = { heading.floatValue },
-        onAction = onAction,
-        modifier = modifier,
-    )
+    return position
 }
 
 @Composable
 fun QiblaCompassScreen(
     uiState: QiblaCompassUiState,
     accuracy: CompassAccuracy,
+    diagnostic: CompassDiagnostic?,
     headingProvider: () -> Float,
+    sensorSource: String,
+    isCalibrating: Boolean,
+    calibrationProgress: Float,
     onAction: (QiblaCompassUiAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LockOrientationEffect(uiState.isOrientationLocked)
 
-    // The screen owns the GPS fetch + its loading state; the helper only gates permission/service.
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var isFetchingLocation by remember { mutableStateOf(false) }
-    val triggerLocation = rememberLocationAccessHelperDialogs(
-        onPermissionGranted = { forceFresh ->
-            scope.launch {
-                isFetchingLocation = true
-                try {
-                    LocationUtils.requestCurrentLocation(context, forceFresh = forceFresh).getOrNull()?.let { location ->
-                        onAction(
-                            QiblaCompassUiAction.OnLocationFetched(
-                                CalculationLocationDetail(lat = location.latitude, long = location.longitude),
-                            ),
-                        )
-                    }
-                } finally {
-                    isFetchingLocation = false
-                }
-            }
+    val gpsController = rememberQiblaGpsController(
+        onCoordinatesFetched = { lat, lng ->
+            onAction(
+                QiblaCompassUiAction.OnLocationFetched(
+                    CalculationLocationDetail(lat = lat, long = lng),
+                ),
+            )
         },
     )
 
-    // Mirror the legacy app: grab a fresh GPS fix automatically the first time the compass opens,
-    // instead of waiting for a manual refresh tap.
-    LaunchedEffect(Unit) {
-        triggerLocation(false)
+    var displayMode by rememberSaveable { mutableStateOf(CompassDisplayMode.DIRECT_POINTER) }
+
+    if (uiState.showDiagnostics) {
+        CompassDiagnosticDialog(
+            diagnostic = diagnostic,
+            sensorSource = sensorSource,
+            onDismiss = { onAction(QiblaCompassUiAction.OnDismissDiagnostics) },
+        )
     }
 
     ScreenScaffold(
@@ -161,61 +192,166 @@ fun QiblaCompassScreen(
         onBackClick = { NavigationController.navigateBack() },
         scrollable = false,
         modifier = modifier,
+        actions = {
+            CompassIconButton(
+                icon = R.drawable.info_variant_outline,
+                contentDescription = "Diagnostics",
+                onClick = { onAction(QiblaCompassUiAction.OnDiagnosticsClick) },
+            )
+        },
     ) {
-        Box(Modifier.fillMaxSize()) {
-            // Compass underneath: largest square that fits the available space (width-bound in
-            // portrait, height-bound in landscape), centered.
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val availableWidth = maxWidth
-                val availableHeight = maxHeight
-                // In portrait, lift the dial up off the bottom so it clears the overlaid info bar;
-                // landscape uses the full height.
-                val portrait = availableHeight >= availableWidth
-                val bottomPad = if (portrait) CompassButtonSize * 3 + 12.dp else 0.dp
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = bottomPad),
-                    contentAlignment = Alignment.Center,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = dimensionResource(R.dimen.page_padding)),
+        ) {
+            // شريط التحكم العلوي: زر التبديل + قفل الشاشة
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    onClick = {
+                        displayMode = if (displayMode == CompassDisplayMode.CLASSIC_DIAL) {
+                            CompassDisplayMode.DIRECT_POINTER
+                        } else {
+                            CompassDisplayMode.CLASSIC_DIAL
+                        }
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    shadowElevation = 2.dp,
                 ) {
-                    val side = minOf(availableWidth, availableHeight - bottomPad)
-                    Compass(
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.compass_outline),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(
+                            text = if (displayMode == CompassDisplayMode.CLASSIC_DIAL) {
+                                "المؤشر المباشر"
+                            } else {
+                                "قرص البوصلة"
+                            },
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+
+                CompassIconButton(
+                    icon = if (uiState.isOrientationLocked) {
+                        R.drawable.outline_screen_lock_rotation_24
+                    } else {
+                        R.drawable.outline_screen_rotation_24
+                    },
+                    contentDescription = stringResource(
+                        if (uiState.isOrientationLocked) {
+                            R.string.qibla_unlock_orientation
+                        } else {
+                            R.string.qibla_lock_orientation
+                        },
+                    ),
+                    active = uiState.isOrientationLocked,
+                    onClick = { onAction(QiblaCompassUiAction.OnToggleOrientationLock) },
+                )
+            }
+
+            // مساحة البوصلة الرئيسية (تشغل معظم الشاشة)
+            BoxWithConstraints(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                val compassDiameter = minOf(maxWidth * 0.94f, maxHeight * 0.96f)
+
+                if (displayMode == CompassDisplayMode.CLASSIC_DIAL) {
+                    ClassicCompassDial(
                         headingProvider = headingProvider,
                         qiblaDegrees = uiState.qiblaDegrees,
-                        accuracy = accuracy,
-                        modifier = Modifier.size(side),
+                        modifier = Modifier.size(compassDiameter),
+                    )
+                } else {
+                    DirectQiblaPointer(
+                        headingProvider = headingProvider,
+                        qiblaDegrees = uiState.qiblaDegrees,
+                        modifier = Modifier.size(compassDiameter),
                     )
                 }
             }
 
-            // Controls overlaid on top of the compass.
-            Column(Modifier.fillMaxSize()) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    CompassIconButton(
-                        icon = if (uiState.isOrientationLocked) {
-                            R.drawable.outline_screen_lock_rotation_24
-                        } else {
-                            R.drawable.outline_screen_rotation_24
-                        },
-                        contentDescription = stringResource(
-                            if (uiState.isOrientationLocked) {
-                                R.string.qibla_unlock_orientation
-                            } else {
-                                R.string.qibla_lock_orientation
-                            },
-                        ),
-                        active = uiState.isOrientationLocked,
-                        onClick = { onAction(QiblaCompassUiAction.OnToggleOrientationLock) },
-                    )
-                }
+            // تنبيه لطيف لحركة المعايرة (رقم 8) يظهر فقط عند انخفاض دقة الحساس أو رصد تشويش معدني قريب
+            GentleCalibrationBanner(accuracy = accuracy)
 
-                Spacer(Modifier.weight(1f))
+            // بطاقة معلومات مدمجة وصغيرة في الأسفل حتى لا تأخذ مساحة البوصلة
+            CompactInfoCard(
+                uiState = uiState,
+                accuracy = accuracy,
+                isFetchingLocation = gpsController.isFetching,
+                onRefreshLocation = gpsController.requestGpsLocation,
+            )
+        }
+    }
+}
 
-                InfoSection(
-                    uiState = uiState,
-                    accuracy = accuracy,
-                    isFetchingLocation = isFetchingLocation,
-                    onRefreshLocation = { triggerLocation(true) },
+@Composable
+private fun GentleCalibrationBanner(accuracy: CompassAccuracy) {
+    val needsCalibration = accuracy == CompassAccuracy.LOW ||
+        accuracy == CompassAccuracy.UNRELIABLE ||
+        accuracy == CompassAccuracy.CALIBRATING ||
+        accuracy == CompassAccuracy.MAGNETIC_INTERFERENCE
+
+    AnimatedVisibility(
+        visible = needsCalibration,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+    ) {
+        val isInterference = accuracy == CompassAccuracy.MAGNETIC_INTERFERENCE
+        val containerColor = if (isInterference) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        }
+        val contentColor = if (isInterference) {
+            MaterialTheme.colorScheme.onErrorContainer
+        } else {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        }
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp),
+            shape = MaterialTheme.shapes.medium,
+            color = containerColor,
+            contentColor = contentColor,
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                FigureEightAnimationIcon(
+                    tint = contentColor,
+                    modifier = Modifier.size(width = 36.dp, height = 20.dp),
+                )
+                Text(
+                    text = stringResource(
+                        if (isInterference) R.string.qibla_interference_hint else R.string.qibla_calibration_hint
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -223,38 +359,80 @@ fun QiblaCompassScreen(
 }
 
 @Composable
-private fun Compass(
-    headingProvider: () -> Float,
-    qiblaDegrees: Float?,
-    accuracy: CompassAccuracy,
+private fun FigureEightAnimationIcon(
+    tint: Color,
     modifier: Modifier = Modifier,
 ) {
-    // Pick the dial by the resolved theme, not the system setting: the app's theme can be forced
-    // Light/Dark independently of the OS, and may be a dynamic scheme. Surface luminance reflects
-    // whatever scheme is actually rendered.
+    val infiniteTransition = rememberInfiniteTransition(label = "figure8")
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2.0 * PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "figure8Phase",
+    )
+
+    Canvas(modifier = modifier) {
+        val rx = size.width * 0.42f
+        val ry = size.height * 0.36f
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+
+        val path = Path()
+        val steps = 48
+        for (i in 0..steps) {
+            val t = (i.toFloat() / steps) * (2.0 * PI).toFloat()
+            val x = cx + rx * sin(t)
+            val y = cy + ry * sin(2f * t)
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        drawPath(
+            path = path,
+            color = tint.copy(alpha = 0.45f),
+            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
+        )
+
+        val dotX = cx + rx * sin(phase)
+        val dotY = cy + ry * sin(2f * phase)
+        drawCircle(
+            color = tint,
+            radius = 3.2.dp.toPx(),
+            center = Offset(dotX, dotY),
+        )
+    }
+}
+
+@Composable
+private fun ClassicCompassDial(
+    headingProvider: () -> Float,
+    qiblaDegrees: Float?,
+    modifier: Modifier = Modifier,
+) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val baseImage = if (isDark) R.drawable.compass_base_dark else R.drawable.compass_base_light
 
-    // TalkBack guidance toward the Kaaba. derivedStateOf reads the per-frame heading but only
-    // recomposes (and re-announces via the live region) when the coarse guidance bucket changes,
-    // so screen readers aren't flooded with an announcement every sensor frame.
-    val guidance by remember(qiblaDegrees, accuracy) {
-        derivedStateOf { qiblaGuidance(headingProvider(), qiblaDegrees, accuracy) }
-    }
-    val a11yModifier = guidance?.let { g ->
-        val description = if (g.degrees != null) {
-            stringResource(g.textRes, g.degrees)
-        } else {
-            stringResource(g.textRes)
-        }
-        Modifier.semantics {
-            contentDescription = description
-            liveRegion = LiveRegionMode.Polite
-        }
-    } ?: Modifier
+    val smoothHeading = rememberFluidAngle(headingProvider)
 
-    Box(modifier.then(a11yModifier), contentAlignment = Alignment.Center) {
-        // Static circular surface providing the (rotation-independent) circular drop shadow.
+    val isAligned by remember(qiblaDegrees) {
+        derivedStateOf {
+            if (qiblaDegrees == null) {
+                false
+            } else {
+                abs(shortestAngleDelta(smoothHeading, qiblaDegrees)) <= 3f
+            }
+        }
+    }
+
+    val haptic = LocalHapticFeedback.current
+    LaunchedEffect(isAligned) {
+        if (isAligned) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
+
+    Box(modifier, contentAlignment = Alignment.Center) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -268,19 +446,282 @@ private fun Compass(
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer { rotationZ = -headingProvider() },
+                .graphicsLayer { rotationZ = -smoothHeading },
         )
         if (qiblaDegrees != null) {
             Image(
                 painter = painterResource(R.drawable.qibla_indicator),
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
+                colorFilter = if (isAligned) ColorFilter.tint(Color(0xFF00C853)) else null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer { rotationZ = -headingProvider() + qiblaDegrees },
+                    .graphicsLayer { rotationZ = -smoothHeading + qiblaDegrees },
             )
         }
-        HeadingDegreeText(headingProvider)
+
+        Text(
+            text = "${normalize360(smoothHeading).roundToInt()}°",
+            style = MaterialTheme.typography.displayMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun DirectQiblaPointer(
+    headingProvider: () -> Float,
+    qiblaDegrees: Float?,
+    modifier: Modifier = Modifier,
+) {
+    val qiblaTarget = qiblaDegrees ?: 136f
+    val smoothHeading = rememberFluidAngle(headingProvider)
+    val relativeAngle = shortestAngleDelta(smoothHeading, qiblaTarget)
+
+    val isAligned = abs(relativeAngle) <= 3.5f
+
+    val haptic = LocalHapticFeedback.current
+    LaunchedEffect(isAligned) {
+        if (isAligned) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
+
+    val circleColor = if (isAligned) Color(0xFF00C853) else MaterialTheme.colorScheme.primary
+
+    BoxWithConstraints(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        val outerDiameter = minOf(maxWidth, maxHeight) * 0.96f
+        val innerDiameter = outerDiameter * 0.84f
+
+        Box(
+            modifier = Modifier.size(outerDiameter),
+            contentAlignment = Alignment.Center,
+        ) {
+            // مؤشر السهم الخارجي الكبير
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { rotationZ = relativeAngle },
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                Canvas(modifier = Modifier.size(outerDiameter * 0.14f)) {
+                    val path = Path().apply {
+                        moveTo(size.width / 2f, 0f)
+                        lineTo(size.width, size.height)
+                        lineTo(0f, size.height)
+                        close()
+                    }
+                    drawPath(path = path, color = circleColor)
+                }
+            }
+
+            // الحلقة الدائرية الكبيرة ومؤشر الكعبة
+            Box(
+                modifier = Modifier
+                    .size(innerDiameter)
+                    .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
+                    .clip(CircleShape)
+                    .border(width = 8.dp, color = circleColor, shape = CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(16.dp),
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.qibla_indicator),
+                        contentDescription = "Kaaba",
+                        modifier = Modifier.size(innerDiameter * 0.38f),
+                        colorFilter = if (isAligned) ColorFilter.tint(Color(0xFF00C853)) else null,
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = if (isAligned) {
+                            "أنت تواجه القبلة الآن"
+                        } else {
+                            "${abs(relativeAngle).roundToInt()}° ${if (relativeAngle > 0) "يميناً" else "يساراً"}"
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = if (isAligned) Color(0xFF00C853) else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompactInfoCard(
+    uiState: QiblaCompassUiState,
+    accuracy: CompassAccuracy,
+    isFetchingLocation: Boolean,
+    onRefreshLocation: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 1.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            // الصف الأول: الموقع وزر تحديث GPS
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.qibla_location_label) + " ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = uiState.locationLabel.text(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                Surface(
+                    onClick = onRefreshLocation,
+                    enabled = !isFetchingLocation,
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        if (isFetchingLocation) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = LocalContentColor.current,
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(R.drawable.outline_location_searching_24),
+                                contentDescription = stringResource(R.string.qibla_refresh_location),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            // الصف الثاني: زاوية القبلة + دقة البوصلة في سطر واحد مدمج
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                uiState.qiblaDegrees?.let { qibla ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.qibla_label) + " ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = stringResource(R.string.qibla_degrees_from_north, qibla.roundToInt()),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.qibla_accuracy_label) + " ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = stringResource(accuracy.labelRes()),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = accuracy.color(),
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CompassDiagnosticDialog(
+    diagnostic: CompassDiagnostic?,
+    sensorSource: String,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Sensor Diagnostics") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Active Source: $sensorSource",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+                HorizontalDivider()
+                if (diagnostic == null) {
+                    Text("Loading diagnostics...")
+                } else {
+                    DiagnosticItem("Rotation Vector", diagnostic.hasRotationVector, diagnostic.registeredRotationVector)
+                    DiagnosticItem("Accelerometer", diagnostic.hasAccelerometer, diagnostic.registeredAccelerometer)
+                    DiagnosticItem("Magnetometer", diagnostic.hasMagnetometer, diagnostic.registeredMagnetometer)
+                    DiagnosticItem("Gyroscope", diagnostic.hasGyroscope, diagnostic.registeredGyroscope)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+    )
+}
+
+@Composable
+fun DiagnosticItem(name: String, hasSensor: Boolean, registered: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = name, fontWeight = FontWeight.Medium)
+        val statusText = when {
+            !hasSensor -> "Missing"
+            !registered -> "Failed"
+            else -> "Active"
+        }
+        val statusColor = when {
+            !hasSensor -> MaterialTheme.colorScheme.error
+            !registered -> MaterialTheme.colorScheme.error
+            else -> if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) DarkSuccess else LightSuccess
+        }
+        Text(text = statusText, color = statusColor, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -308,7 +749,6 @@ private fun CompassIconButton(
     ) {
         Box(contentAlignment = Alignment.Center) {
             if (loading) {
-                // Same footprint as the icon so the button doesn't resize.
                 CircularProgressIndicator(
                     modifier = Modifier.size(CompassIconSize),
                     strokeWidth = 2.dp,
@@ -321,142 +761,21 @@ private fun CompassIconButton(
     }
 }
 
-/** Isolated so only this node recomposes on each sensor frame. */
-@Composable
-private fun HeadingDegreeText(headingProvider: () -> Float) {
-    Text(
-        text = "${headingProvider().roundToInt()}°",
-        style = MaterialTheme.typography.displayMedium,
-    )
-}
-
-@Composable
-private fun InfoSection(
-    uiState: QiblaCompassUiState,
-    accuracy: CompassAccuracy,
-    isFetchingLocation: Boolean,
-    onRefreshLocation: () -> Unit,
-) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(bottom = dimensionResource(R.dimen.element_padding_large)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding)),
-        horizontalAlignment = Alignment.Start,
-    ) {
-        val rowModifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = CompassButtonSize)
-
-        LabeledValue(
-            label = stringResource(R.string.qibla_location_label),
-            value = { Text(uiState.locationLabel.text()) },
-            modifier = rowModifier,
-        ) {
-            CompassIconButton(
-                icon = R.drawable.outline_location_searching_24,
-                contentDescription = stringResource(R.string.qibla_refresh_location),
-                onClick = onRefreshLocation,
-                loading = isFetchingLocation,
-            )
-        }
-
-        uiState.qiblaDegrees?.let { qibla ->
-            LabeledValue(
-                label = stringResource(R.string.qibla_label),
-                value = { Text(stringResource(R.string.qibla_degrees_from_north, qibla.roundToInt())) },
-                modifier = rowModifier,
-            )
-        }
-
-        LabeledValue(
-            label = stringResource(R.string.qibla_accuracy_label),
-            value = {
-                Text(
-                    text = stringResource(accuracy.labelRes()),
-                    color = accuracy.color(),
-                    fontWeight = FontWeight.Medium,
-                )
-            },
-            modifier = rowModifier,
-        )
-    }
-}
-
-@Composable
-private fun LabeledValue(
-    label: String,
-    value: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    extraContent: (@Composable () -> Unit)? = null,
-) {
-    FlowRow(
-        modifier.wrapContentHeight(),
-        itemVerticalAlignment = Alignment.CenterVertically,
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.element_padding_compact)),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(text = label, fontWeight = FontWeight.Bold)
-        value()
-        extraContent?.invoke()
-    }
-}
-
-/**
- * TalkBack guidance for orienting toward the Kaaba: a string resource plus an optional degree
- * argument. [degrees] is null when already facing the Qibla.
- */
-private data class QiblaGuidance(
-    val textRes: Int,
-    val degrees: Int?,
-)
-
-/** Half-width (degrees) of the cone treated as "facing the Qibla". */
-private const val QIBLA_FACING_THRESHOLD = 5
-
-/** Bucket size (degrees) for the announced turn amount, to limit re-announcements while rotating. */
-private const val QIBLA_TURN_BUCKET = 5
-
-/**
- * Maps the device [heading] and [qiblaDegrees] (both 0-360, true north) to coarse turn guidance.
- * Returns null when the Qibla direction is unknown. When the compass [accuracy] is below
- * [CompassAccuracy.MEDIUM] the heading can't be trusted, so the guidance warns about that instead
- * of giving a (potentially wrong) turn instruction — keeping a screen-reader user aware.
- */
-private fun qiblaGuidance(
-    heading: Float,
-    qiblaDegrees: Float?,
-    accuracy: CompassAccuracy,
-): QiblaGuidance? {
-    qiblaDegrees ?: return null
-    if (accuracy < CompassAccuracy.MEDIUM) {
-        return QiblaGuidance(R.string.qibla_unreliable_a11y, null)
-    }
-    // Signed shortest angle from heading to qibla in (-180, 180]; positive = qibla is clockwise.
-    val delta = ((qiblaDegrees - heading + 540f) % 360f) - 180f
-    val magnitude = abs(delta).roundToInt()
-    if (magnitude <= QIBLA_FACING_THRESHOLD) {
-        return QiblaGuidance(R.string.qibla_facing_a11y, null)
-    }
-    val bucketed = (magnitude.toFloat() / QIBLA_TURN_BUCKET).roundToInt() * QIBLA_TURN_BUCKET
-    val textRes = if (delta > 0) R.string.qibla_turn_right_a11y else R.string.qibla_turn_left_a11y
-    return QiblaGuidance(textRes, bucketed)
-}
-
-/** Shared size for the compass icon buttons; also drives the info rows' height. */
-private val CompassButtonSize = 48.dp
-
-/** Matches the default Material icon size so the loading spinner keeps the same footprint. */
-private val CompassIconSize = 24.dp
+private val CompassButtonSize = 44.dp
+private val CompassIconSize = 22.dp
 
 @Composable
 private fun QiblaLocationLabel.text(): String =
     when (this) {
         QiblaLocationLabel.None -> stringResource(R.string.qibla_no_location)
-
         QiblaLocationLabel.FromSettings -> stringResource(R.string.qibla_location_from_settings)
-
         is QiblaLocationLabel.Fetched -> String.format(
+            Locale.US,
+            "%.2f, %.2f",
+            detail.lat,
+            detail.long,
+        )
+        is QiblaLocationLabel.Cached -> String.format(
             Locale.US,
             "%.2f, %.2f",
             detail.lat,
@@ -471,19 +790,22 @@ private fun CompassAccuracy.labelRes(): Int =
         CompassAccuracy.LOW -> R.string.compass_accuracy_low
         CompassAccuracy.UNRELIABLE -> R.string.compass_accuracy_unreliable
         CompassAccuracy.NO_SENSOR -> R.string.compass_sensor_unavailable
+        CompassAccuracy.CALIBRATING -> R.string.compass_calibrating
+        CompassAccuracy.MAGNETIC_INTERFERENCE -> R.string.compass_magnetic_interference
+        CompassAccuracy.TEMPORARILY_UNAVAILABLE -> R.string.compass_temporarily_unavailable
     }
 
 @Composable
 private fun CompassAccuracy.color(): Color {
-    // Resolve light/dark by the actually-rendered scheme (theme can be forced or dynamic).
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     return when (this) {
         CompassAccuracy.HIGH -> if (isDark) DarkSuccess else LightSuccess
-
         CompassAccuracy.MEDIUM -> if (isDark) DarkWarning else LightWarning
-
-        CompassAccuracy.LOW, CompassAccuracy.UNRELIABLE, CompassAccuracy.NO_SENSOR ->
+        CompassAccuracy.LOW, CompassAccuracy.UNRELIABLE, CompassAccuracy.NO_SENSOR,
+        CompassAccuracy.TEMPORARILY_UNAVAILABLE ->
             MaterialTheme.colorScheme.error
+        CompassAccuracy.CALIBRATING -> MaterialTheme.colorScheme.primary
+        CompassAccuracy.MAGNETIC_INTERFERENCE -> MaterialTheme.colorScheme.error
     }
 }
 
@@ -493,51 +815,12 @@ private fun LockOrientationEffect(locked: Boolean) {
     val activity = context as? Activity ?: return
     DisposableEffect(locked) {
         activity.requestedOrientation = if (locked) {
-            ActivityInfo.SCREEN_ORIENTATION_LOCKED
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         } else {
             ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
         onDispose {
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
-    }
-}
-
-@Preview(name = "Qibla compass", showSystemUi = true)
-@Composable
-private fun QiblaCompassScreenPreview() {
-    AlAzanThemePreview {
-        QiblaCompassScreen(
-            uiState = QiblaCompassUiState(
-                qiblaDegrees = 218f,
-                locationLabel = QiblaLocationLabel.FromSettings,
-            ),
-            accuracy = CompassAccuracy.HIGH,
-            headingProvider = { 136f },
-            onAction = {},
-        )
-    }
-}
-
-private class AccuracyPreviewProvider : PreviewParameterProvider<CompassAccuracy> {
-    override val values = CompassAccuracy.entries.asSequence()
-}
-
-@Preview(name = "Accuracy light", showBackground = true)
-@Preview(name = "Accuracy dark", showBackground = true, uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun AccuracyRowPreview(@PreviewParameter(AccuracyPreviewProvider::class) accuracy: CompassAccuracy) {
-    AlAzanThemePreview {
-        LabeledValue(
-            label = stringResource(R.string.qibla_accuracy_label),
-            value = {
-                Text(
-                    text = stringResource(accuracy.labelRes()),
-                    color = accuracy.color(),
-                    fontWeight = FontWeight.Medium,
-                )
-            },
-            modifier = Modifier.padding(dimensionResource(R.dimen.page_padding)),
-        )
     }
 }

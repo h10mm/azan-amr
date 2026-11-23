@@ -42,12 +42,16 @@ class BuildNextPrayerWidgetDataUseCaseTest {
     private val getNext = mock<GetNextShariaTimesUseCase> {
         on { invoke(any(), any(), any(), any(), any(), any(), anyOrNull(), any(), any(), any()) } doReturn details(Prayer.Asr, at(15.0))
     }
+    private val getShariaTimes = mock<GetShariaTimesUseCase>()
+    private val formatter = mock<WidgetFormatter> {
+        on { formatPrayerTime(any(), any(), any(), any()) } doReturn "03:00 PM"
+    }
 
     private fun useCase(next: ShariaTimeDetails? = details(Prayer.Asr, at(15.0))): BuildNextPrayerWidgetDataUseCase {
         val mock = mock<GetNextShariaTimesUseCase> {
             on { invoke(any(), any(), any(), any(), any(), any(), anyOrNull(), any(), any(), any()) } doReturn next
         }
-        return BuildNextPrayerWidgetDataUseCase(mock)
+        return BuildNextPrayerWidgetDataUseCase(mock, getShariaTimes, formatter)
     }
 
     private fun settings(countdownPrayers: List<Prayer> = listOf(Prayer.Fajr, Prayer.Dhuhr, Prayer.Asr, Prayer.Maghrib, Prayer.Isha)) =
@@ -97,7 +101,7 @@ class BuildNextPrayerWidgetDataUseCaseTest {
         // Only Fajr + Maghrib selected -> every other prayer must be excluded.
         val selected = listOf(Prayer.Fajr, Prayer.Maghrib)
         val expectedExcluded = Prayer.entries.toSet() - selected.toSet()
-        BuildNextPrayerWidgetDataUseCase(getNext).invoke(at(9.0), settings(countdownPrayers = selected), calc(), location)
+        BuildNextPrayerWidgetDataUseCase(getNext, getShariaTimes, formatter).invoke(at(9.0), settings(countdownPrayers = selected), calc(), location)
 
         val captor = argumentCaptor<Set<Prayer>>()
         verify(getNext).invoke(any(), any(), any(), any(), any(), any(), anyOrNull(), captor.capture(), any(), any())

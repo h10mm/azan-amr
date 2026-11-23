@@ -8,11 +8,10 @@
     android:id="@+id/cw_paged_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/custom_widget_bg"
+    android:background="@drawable/widget_table_bg"
     android:gravity="center"
     android:orientation="vertical"
-    android:paddingTop="2dp"
-    android:paddingBottom="2dp">
+    android:padding="10dp">
 
     <!-- Two wrap_content + weight bands (see custom_widget.xml): header + prayer rows are each at least
          their own height (no cropping) and split the leftover space above the nav bar evenly. -->

@@ -273,7 +273,13 @@ class AdhanSettingsViewModel
                 val current = state.getNotifSettings(prayer)
                 val next = nextBoolState(current)
                 state.setNotifSettings(prayer, next).let {
-                    if (!next.value) it.setSoundSettings(prayer, PrayerAlarmSettings.Bool(false)) else it
+                    if (!next.value) {
+                        it.setSoundSettings(prayer, PrayerAlarmSettings.Bool(false))
+                    } else if (state.getSoundSettings(prayer).selectedDays().isEmpty()) {
+                        it.setSoundSettings(prayer, PrayerAlarmSettings.Bool(true))
+                    } else {
+                        it
+                    }
                 }
             }
         }

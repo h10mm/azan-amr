@@ -62,15 +62,6 @@ fun HomePermissionGate(
                         ),
                     )
                 }
-                if (!isSchedulingPermissionGranted(context, SchedulingPermission.PhoneState)) {
-                    add(
-                        PermissionStep(
-                            SchedulingPermission.PhoneState,
-                            R.string.adhan_phone_state_permission_rationale,
-                            R.string.adhan_phone_state_permission_denied_text,
-                        ),
-                    )
-                }
             }
             if (check.hasScheduledAlarms && !isSchedulingPermissionGranted(context, SchedulingPermission.ExactAlarm)) {
                 add(

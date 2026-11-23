@@ -7,7 +7,8 @@ import com.github.meypod.al_azan.core.domain.model.calculation.CalculationLocati
 data class QiblaCompassUiState(
     val qiblaDegrees: Float? = null,
     val locationLabel: QiblaLocationLabel = QiblaLocationLabel.None,
-    val isOrientationLocked: Boolean = false,
+    val isOrientationLocked: Boolean = true,
+    val showDiagnostics: Boolean = false,
 )
 
 @Immutable
@@ -20,4 +21,7 @@ sealed interface QiblaLocationLabel {
 
     /** Using a location just fetched from GPS. */
     data class Fetched(val detail: CalculationLocationDetail) : QiblaLocationLabel
+
+    /** Using the last cached device location offline without turning on GPS. */
+    data class Cached(val detail: CalculationLocationDetail) : QiblaLocationLabel
 }

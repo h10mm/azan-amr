@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.github.meypod.al_azan.R
 import com.github.meypod.al_azan.core.domain.model.adhan.AdhanKey
@@ -82,14 +83,40 @@ private fun ColumnScope.AdhanSettingsContent(
     uiState: AdhanSettingsUiState,
     onAction: (AdhanSettingsUiAction) -> Unit,
 ) {
-    NotificationsCard(uiState, onAction)
-    AutoDismissCard(uiState, onAction)
-    VibrationCard(uiState, onAction)
-    PlaybackCard(uiState, onAction)
+    SectionCategoryHeader("1. صوت ومستوى الأذان", "🔊")
     VolumeCard(uiState, onAction)
     GradualVolumeCard(uiState, onAction)
+
+    SectionCategoryHeader("2. السلوك أثناء الصلاة والمسجد", "🕌")
     AutoSilentCard(uiState, onAction)
+    PlaybackCard(uiState, onAction)
+
+    SectionCategoryHeader("3. تنبيهات ما قبل الأذان والاقتراب", "⏳")
+    NotificationsCard(uiState, onAction)
+    AutoDismissCard(uiState, onAction)
+
+    SectionCategoryHeader("4. شاشة العرض والاهتزاز", "📱")
     DisplayCard(uiState, onAction)
+    VibrationCard(uiState, onAction)
+}
+
+@Composable
+private fun SectionCategoryHeader(title: String, icon: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp, bottom = 2.dp, start = 4.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(text = icon, fontSize = 18.sp)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
 }
 
 @Composable

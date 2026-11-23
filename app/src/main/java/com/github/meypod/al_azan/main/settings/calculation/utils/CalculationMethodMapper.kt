@@ -2,6 +2,7 @@ package com.github.meypod.al_azan.main.settings.calculation.utils
 
 import android.content.res.Resources
 import com.github.meypod.al_azan.R
+import com.github.meypod.al_azan.core.domain.model.calculation.canonicalParameters
 import io.github.meypod.adhan_kotlin.CalculationMethod
 import io.github.meypod.adhan_kotlin.CalculationParameters
 
@@ -39,7 +40,7 @@ fun CalculationMethod.i18n(resources: Resources) =
  * canonical values of the selected [CalculationMethod].
  */
 fun CalculationParameters.isMethodModified(): Boolean {
-    val base = method.parameters
+    val base = method.canonicalParameters()
     return fajrAngle != base.fajrAngle ||
         ishaAngle != base.ishaAngle ||
         ishaInterval != base.ishaInterval ||

@@ -4,7 +4,7 @@
     <!-- ============================================================
          Shared / common UI  (core/presentation/components)
          ============================================================ -->
-    <string name="app_name">الأذان</string>
+    <string name="app_name">الأذان عمرو</string>
     <string name="cancel">إلغاء</string>
     <string name="confirm">تأكيد</string>
     <string name="close">إغلاق</string>
@@ -40,12 +40,16 @@
     <string name="back_button">رجوع</string>
     <string name="next_button">التالي</string>
     <string name="finish_button">إنهاء</string>
+    <string name="nateega_classic_desc">النتيجة - ورق كلاسيكي مصري</string>
+    <string name="nateega_amoled_desc">النتيجة - أسود فاحم (AMOLED)</string>
+    <string name="nateega_midnight_desc">النتيجة - أزرق منتصف الليل (Midnight Blue)</string>
 
     <!-- ============================================================
          Prayer names  (core/domain/model/adhan)
          ============================================================ -->
     <string name="fajr">الفجر</string>
     <string name="sunrise">شروق الشمس</string>
+    <string name="sunrise_short">شروق</string>
     <string name="dhuhr">الظهر</string>
     <string name="asr">العصر</string>
     <string name="sunset">غروب الشمس</string>
@@ -169,10 +173,10 @@
          ============================================================ -->
     <string name="settings">إعدادات</string>
     <string name="qibla">القبلة</string>
-    <string name="counter">عداد القضاء</string>
+    <string name="counter">المسبحة الإلكترونية</string>
     <string name="reminder">تذكير</string>
-    <string name="alarm_settings_title">إعدادات المنبه</string>
-    <string name="schedule_and_muezzin_title"><![CDATA[الجدول والمؤذّن]]></string>
+    <string name="alarm_settings_title">صوت وضوابط الأذان</string>
+    <string name="schedule_and_muezzin_title">أصوات المؤذنين لكل صلاة</string>
     <string name="calculation_title">حساب</string>
     <string name="interface_settings">إعدادات الواجهة</string>
     <string name="widget_settings_title">إعدادات المصغّر</string>
@@ -233,6 +237,9 @@
     <string name="theme_classic_light">فاتح كلاسيكي</string>
     <string name="theme_system_default">افتراضي النظام</string>
     <string name="theme_dynamic">ديناميكي</string>
+    <string name="theme_modern_teal">أزرق سيان حديث</string>
+    <string name="theme_midnight_blue">أزرق منتصف الليل</string>
+    <string name="theme_emerald">زمردي</string>
     <string name="countdown_timer">مؤقّت العد التنازلي في الرئيسية</string>
     <string name="countdown_timer_help">عرض الوقت المتبقّي للصلاة التالية على الشاشة الرئيسية.</string>
     <string name="countdown_skip_non_prayers">العد التنازلي للصلوات فقط</string>
@@ -266,6 +273,8 @@
     <string name="calendar_persian">الفارسية</string>
     <string name="calendar_ethiopic">إثيوبي</string>
     <string name="calendar_buddhist">بوذي</string>
+    <string name="calendar_coptic">القبطي (توت، بابه، هاتور…)</string>
+    <string name="calendar_levant">الميلادي الشامي (كانون، شباط، آذار…)</string>
 
     <!-- ============================================================
          Lunar calendar  (core/domain/model/lunar, settings/calculation)
@@ -280,7 +289,7 @@
     <string name="lunar_islamic_saudi_sighting">إسلامي (رؤية المملكة العربية السعودية)</string>
     <string name="attention_title"><b>انتباه!</b></string>
     <string name="lunar_calendar_warning">التقويم القمري الخاص بالتطبيق محسوب مسبقًا وقد لا يكون دقيقًا لأنه لا يعتمد على رؤية الهلال. هذا مهم جدًا للملاحظة بالنسبة لبداية ونهاية رمضان.</string>
-    <string name="polar_circle_unresolved_warning">لا تشرق الشمس أو تغرب هنا في جزء من السنة. بطريقة الحساب الحالية لا توجد أوقات صلاة لتلك الأيام، فاختر طريقة أخرى أو حدّد كيفية معالجتها في إعدادات الحسابات المتقدمة.</string>
+    <string name="polar_circle_unresolved_warning">لا تشرق الشمس أو تغرب هنا في جزء من السنة. بطريقة الحساب الحالية لا توجد أوقات صلاة لتلك الأيام، فاختر طريقة أخرى أو حدّد كيفية معالجة ذلك في إعدادات الحسابات المتقدمة.</string>
 
     <!-- ============================================================
          Calculation  (main/settings/calculation)
@@ -375,43 +384,52 @@
     <string name="use_default_muezzin">استخدام الافتراضي</string>
     <string name="custom_muezzin">مؤذّن مخصص</string>
     <string name="use_default_vibration">استخدام الافتراضي</string>
-    <string name="vibration_mode">وضع الاهتزاز</string>
-    <string name="vibration_mode_help">هل يجب أن يهتز الهاتف عند بدء تشغيل الأذان أو التذكيرات؟</string>
-    <string name="show_upcoming_alarm">إظهار إشعار \"التنبيه القادم\"</string>
-    <string name="show_upcoming_alarm_help">في حال التفعيل، سيظهر إشعار قبل كل أذان بساعة تقريبًا.</string>
-    <string name="custom_upcoming_time">التنبيه قبل الأذان</string>
-    <string name="custom_upcoming_time_help">عدد الدقائق قبل كل أذان أو تذكير لعرض الإشعار القادم.</string>
-    <string name="show_next_in_notification">تضمين الصلاة التالية في الإشعار</string>
-    <string name="show_next_in_notification_help">يعرض كل إشعار أيضًا وقت الصلاة التالية.</string>
-    <string name="bypass_dnd">تجاوز وضع \"عدم الإزعاج\"</string>
-    <string name="bypass_dnd_help">تشغيل الأذان حتى أثناء تفعيل \"عدم الإزعاج\".</string>
-    <string name="use_headphones">تفضيل السماعات</string>
-    <string name="use_headphones_help">عند توصيل السماعات، يُشغَّل كل الصوت من خلالها فقط.</string>
-    <string name="volume_button_stops_adhan">زر الصوت يوقف الأذان</string>
-    <string name="volume_button_stops_adhan_help">الضغط على زر الصوت يوقف الأذان الجاري تشغيله.</string>
-    <string name="custom_alarm_volume">مستوى صوت مخصص للمنبه</string>
-    <string name="custom_alarm_volume_help">تشغيل الأذان والتذكيرات دائمًا بهذا المستوى من الصوت، بغض النظر عن مستوى صوت الجهاز. يُستعاد مستوى صوت الجهاز بعد ذلك.</string>
-    <string name="gradual_alarm_volume">رفع صوت المنبه تدريجيًا</string>
-    <string name="gradual_alarm_volume_help">يبدأ الصوت صامتًا ويصل إلى مستوى صوت المنبه خلال 5 ثوانٍ. الأصوات القصيرة تُشغَّل بمستوى الصوت الكامل مباشرة.</string>
-    <string name="dont_show_alarm_screen">إبقاء الشاشة مطفأة</string>
-    <string name="dont_show_alarm_screen_help">عدم تشغيل الشاشة أو عرض المنبه بملء الشاشة عند تشغيل أذان أو تذكير.</string>
-    <string name="force_launch_alarm_screen">افتح شاشة المنبه دائمًا</string>
-    <string name="force_launch_alarm_screen_help">أجبر منبه ملء الشاشة على الفتح مباشرةً. جرّب هذا إذا كان هاتفك لا يعرضه فوق شاشة القفل.</string>
-    <string name="force_launch_alarm_screen_permission_missing">تمت إزالة إذن العرض فوق التطبيقات الأخرى، لذا لا يمكن لشاشة المنبه أن تُفتح من تلقاء نفسها.</string>
+    <string name="vibration_mode">نمط الاهتزاز مع الأذان</string>
+    <string name="vibration_mode_help">تحديد كيفية اهتزاز الهاتف عند انطلاق صوت الأذان أو التذكيرات.</string>
+    <string name="show_upcoming_alarm">تنبيه اقتراب وقت الصلاة</string>
+    <string name="show_upcoming_alarm_help">إظهار إشعار هادئ قبل موعد الأذان للاستعداد والتوضؤ والتبكير لصلاة الجماعة.</string>
+    <string name="custom_upcoming_time">وقت التنبيه المسبق قبل الأذان</string>
+    <string name="custom_upcoming_time_help">تحديد عدد الدقائق قبل كل أذان لإرسال إشعار الاقتراب الاستعدادي.</string>
+    <string name="show_next_in_notification">إظهار موعد الصلاة التالية في الإشعار</string>
+    <string name="show_next_in_notification_help">إضافة توقيت الصلاة القادمة أسفل إشعار الصلاة الحالية.</string>
+    <string name="bypass_dnd">تخطي وضع الصامت وعدم الإزعاج (DND)</string>
+    <string name="bypass_dnd_help">سماع أذان الصلوات (خاصة الفجر) حتى لو كان الهاتف في وضع الصامت التام أو النوم لضمان عدم تفويت الفريضة.</string>
+    <string name="use_headphones">تشغيل الأذان في السماعات فقط</string>
+    <string name="use_headphones_help">عند توصيل سماعات الرأس، ينطلق صوت الأذان في السماعة دون إحراج من حولك في العمل أو المواصلات.</string>
+    <string name="volume_button_stops_adhan">إيقاف صوت الأذان بأزرار الصوت</string>
+    <string name="volume_button_stops_adhan_help">الضغط على أزرار الصوت الخارجية يوقف صوت الأذان فوراً دون الحاجة لفتح قفل الشاشة.</string>
+    <string name="custom_alarm_volume">مستوى صوت مخصص للأذان</string>
+    <string name="custom_alarm_volume_help">تشغيل الأذان والتذكيرات بقوة صوت مستقلة عن رنة الهاتف العادية، مع استعادة صوت الهاتف بعد انتهاء الأذان.</string>
+    <string name="gradual_alarm_volume">التصاعد التدريجي لصوت الأذان</string>
+    <string name="gradual_alarm_volume_help">يبدأ الأذان خفيضاً ثم يرتفع تدريجياً خلال 5 ثوانٍ؛ لضمان استيقاظ هادئ ومريح دون فزع وخاصة لصلاة الفجر.</string>
+    <string name="dont_show_alarm_screen">إبقاء الشاشة مطفأة عند الأذان</string>
+    <string name="dont_show_alarm_screen_help">عدم إضاءة شاشة الهاتف عند انطلاق الأذان والاكتفاء بالصوت وبطاقة الإشعار.</string>
+    <string name="force_launch_alarm_screen">فتح شاشة الأذان على كامل الشاشة</string>
+    <string name="force_launch_alarm_screen_help">إظهار واجهة الأذان الروحية التفاعلية على كامل الشاشة فور دخول وقت الصلاة.</string>
+    <string name="force_launch_alarm_screen_permission_missing">يلزم منح إذن الظهور فوق التطبيقات لعرض شاشة الأذان التفاعلية بملء الشاشة.</string>
     <string name="notifications">إشعارات</string>
-    <string name="auto_silent_on_dismiss">عدم الإزعاج بعد التجاهل</string>
-    <string name="auto_silent_on_dismiss_help">عند تجاهلك للأذان، يدخل الهاتف في وضع عدم الإزعاج لفترة. الغفوة لا تفعل ذلك. ينطبق على الأذان فقط.</string>
-    <string name="auto_silent_duration">مدة عدم الإزعاج</string>
-    <string name="auto_silent_duration_help">المدة التي يبقى فيها وضع عدم الإزعاج مفعّلًا بعد التجاهل.</string>
-    <string name="notify_on_skipped_adhan">إشعار صامت بدل التخطّي</string>
-    <string name="auto_dismiss_notifications">إزالة الإشعارات بعد</string>
-    <string name="auto_dismiss_notifications_help">يزيل الإشعار الذي يبقى بعد الأذان أو التذكير.</string>
-    <string name="auto_dismiss_never">أبدًا</string>
-    <string name="notify_on_skipped_adhan_help">عند «تخطّي» الأذان من شاشة التنبيهات القادمة، أو «إلغاء المنبه» من إشعار «التنبيه القادم»، يُعرض إشعار صامت في وقته بدلاً من إسقاطه. ينطبق على الأذان فقط.</string>
+    <string name="auto_silent_on_dismiss">كتم الهاتف تلقائياً أثناء صلاة الجماعة</string>
+    <string name="auto_silent_on_dismiss_help">بمجرد إيقاف الأذان، يتحول الهاتف تلقائياً لوضع الصامت أثناء فترة الصلاة في المسجد لحماية خشوع المصلين، ثم يعود لطبيعته.</string>
+    <string name="auto_silent_duration">مدة كتم الهاتف في المسجد</string>
+    <string name="auto_silent_duration_help">المدة الزمنية التي يبقى فيها الهاتف في وضع الصامت لحين انتهاء صلاة الجماعة.</string>
+    <string name="notify_on_skipped_adhan">إشعار عند تعذر إطلاق الأذان</string>
+    <string name="auto_dismiss_notifications">الإخفاء التلقائي للإشعار بعد انقضاء الصلاة</string>
+    <string name="auto_dismiss_notifications_help">مسح بطاقة الإشعار من شريط التنبيهات تلقائياً بعد مرور وقت محدد من الصلاة حتى لا تتكدس الإشعارات في هاتفك.</string>
+    <string name="auto_dismiss_never">أبدًا (إبقاء الإشعار)</string>
+    <string name="notify_on_skipped_adhan_help">إرسال إشعار لطيف في حال كان الهاتف مغلقاً أو في مكالمة وفات موعد أذان فريضة لتداركها فور تشغيله.</string>
 
     <!-- Muezzin voices (core/domain/model/settings) -->
     <string name="muezzin">المؤذّن</string>
     <string name="unknown">غير معروف</string>
+    <string name="takbeer_only">تكبير فقط</string>
+    <string name="dual_calendar_title">التقويم المزدوج ومواقيت الصلاة</string>
+    <string name="calendar_mode_hijri">التقويم الهجري</string>
+    <string name="calendar_mode_gregorian">التقويم الميلادي</string>
+    <string name="prayers_for_day">مواقيت الصلاة لليوم المختار</string>
+    <string name="selected_day_current">اليوم الحالي</string>
+    <string name="selected_day_friday">سيد الأيام (جمعة مباركة)</string>
+    <string name="selected_day_white">من الأيام البيض</string>
+    <string name="selected_day_sunnah">سنّة صيام (الإثنين والخميس)</string>
     <string name="masjid_an_nabawi">المسجد النبوي</string>
     <string name="abdul_basit_abdus_samad">عبد الباسط عبد الصمد</string>
     <string name="ragheb_mustafa_ghalwash">راغب مصطفى غلوش</string>
@@ -632,11 +650,22 @@
     <string name="qibla_turn_right_a11y">استدر يميناً %1$d درجة لمواجهة القبلة</string>
     <string name="qibla_turn_left_a11y">استدر يساراً %1$d درجة لمواجهة القبلة</string>
     <string name="qibla_unreliable_a11y">اتجاه البوصلة غير موثوق، يرجى معايرة جهازك</string>
+    <string name="qibla_calibration_hint">حرّك الهاتف على شكل رقم 8 في الهواء لمعايرة البوصلة</string>
+    <string name="qibla_interference_hint">تشويش معدني قريب — أبعد الهاتف عن المعادن وحركه بشكل رقم 8</string>
+    <string name="qibla_gps_permission_denied_brief">تم رفض إذن الموقع — البوصلة مستمرة على إحداثيات المدينة المختارة.</string>
+    <string name="qibla_gps_permission_permanently_denied">تم رفض إذن الموقع بشكل دائم. يرجى فتح إعدادات التطبيق وتفعيل إذن الموقع، أو يمكنك الاستمرار باستخدام المدينة المختارة.</string>
+    <string name="qibla_gps_service_disabled">خدمة الموقع (GPS) مغلقة حالياً. يرجى تفعيلها لجلب إحداثياتك بدقة، أو يمكنك الاستمرار باستخدام المدينة المختارة.</string>
+    <string name="qibla_gps_fetch_failed">تعذّر الحصول على إشارة GPS حالياً — البوصلة مستمرة على إحداثيات المدينة المختارة.</string>
+    <string name="qibla_gps_updated">تم تحديث الموقع عبر GPS بنجاح</string>
 
     <!-- ============================================================
          Monthly view  (main/monthly)
          ============================================================ -->
-    <string name="monthly_view_title">العرض الشهري</string>
+    <string name="monthly_view_title">الإمساكية</string>
+    <string name="fit_to_screen">ملاءمة كامل الشاشة</string>
+    <string name="zoom_normal">حجم عادي (100%)</string>
+    <string name="zoom_large">خط كبير وواضح (120%)</string>
+    <string name="scroll_to_today">الانتقال لليوم الحالي</string>
     <string name="prev_month">الشهر السابق</string>
     <string name="next_month">الشهر القادم</string>
     <string name="prev_year">السنة السابقة</string>
@@ -715,9 +744,10 @@
          ============================================================ -->
     <string name="alarm_azan_header">أذان</string>
     <string name="alarm_swipe_up_hint">اسحب للأعلى لمزيد من الخيارات</string>
-    <string name="alarm_just_dismiss">تجاهل فقط</string>
-    <string name="alarm_just_dismiss_silence">تجاهل وكتم الهاتف</string>
-    <string name="alarm_dismiss_and_silent">تجاهل وكتم %1$dد</string>
+    <string name="stop_adhan">إيقاف الأذان</string>
+    <string name="alarm_just_dismiss">إيقاف الأذان</string>
+    <string name="alarm_just_dismiss_silence">إيقاف الأذان وكتم الهاتف</string>
+    <string name="alarm_dismiss_and_silent">إيقاف الأذان وكتم %1$dد</string>
     <string name="alarm_remind">ذكّرني خلال %1$dد</string>
     <string name="adhan_remind_body">مرّ %1$s قبل %2$d دقيقة</string>
     <string name="next_prayer_label">التالي</string>
@@ -788,6 +818,20 @@
     <string name="license">رخصة</string>
     <string name="about_credits">جميع حقوق نشر أصوات الأذان تعود إلى أصحابها.</string>
 
+    <!-- Dedication & Prayer for Father -->
+    <string name="dedication_badge">صدقة جارية ونفع مستمر</string>
+    <string name="dedication_basmala">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</string>
+    <string name="dedication_opening">جَعَلَ اللهُ هذا التطبيق صدقةً جاريةً ونفعاً مستمراً،\nلكم أجر كل صلاةٍ وذكرٍ وتسبيح، وله منكم خالص الدعاء.</string>
+    <string name="dedication_request">نسألكم دعوةً صادقة بالرحمة والمغفرة لوالدي:</string>
+    <string name="dedication_name">عمرو هيبه</string>
+    <string name="dedication_status">رحمه الله وغفر له</string>
+    <string name="dedication_dua">«اللهم اغفر له وارحمه، وعافه واعفُ عنه،\nواجعل الفردوس الأعلى داره ومستقره،\nاللهم آنس وحشته، وارحم غربته،\nواجعل هذا العمل نورًا في قبره وشفيعًا له يوم يلقاك»</string>
+    <string name="dedication_closing">جَزَى اللهُ خيراً مَن انتفع بهذا التطبيق ودعا له بالرحمة والمغفرة،\nورزقكم بمثل ما دعوتم به وزيادة.</string>
+    <string name="dedication_copy_dua">نسخ الدعاء</string>
+    <string name="dedication_share">مشاركة الإهداء</string>
+    <string name="dedication_copied_toast">تم نسخ الدعاء بنجاح</string>
+    <string name="dedication_info_tooltip">معلومات الإصدار</string>
+
     <!-- ============================================================
          Upcoming alarms  (main/upcoming_alarms)
          ============================================================ -->
@@ -803,4 +847,322 @@
     <!-- "%1$s" = day (Today / Tomorrow / weekday), "%2$s" = clock time -->
     <string name="upcoming_alarm_when">%1$s · %2$s</string>
 
+    <!-- Onboarding (3-step flow) -->
+    <string name="intro_location_step_title">موقعك</string>
+    <string name="intro_location_search_label">ابحث عن مدينتك أو مركزك</string>
+    <string name="intro_location_search_placeholder">اكتب الاسم، مثل: القاهرة، طنطا، أبو كبير، مكة</string>
+    <string name="intro_location_searching">جارٍ البحث…</string>
+    <string name="intro_location_no_results">لم نجد مدينة مطابقة. راجع الإملاء، أو استخدم GPS، أو اختر يدوياً.</string>
+    <string name="intro_location_or">أو</string>
+    <string name="intro_location_gps_button">استخدم موقعي الحالي (GPS)</string>
+    <string name="intro_location_gps_locating">جارٍ تحديد موقعك…</string>
+    <string name="intro_location_manual_button">اختيار الدولة والمدينة يدوياً</string>
+    <string name="intro_location_selected_title">الموقع المختار</string>
+    <string name="intro_location_none_selected">لم تحدد موقعاً بعد. ابحث بالاسم أو استخدم GPS أو اختر يدوياً.</string>
+    <string name="intro_location_required">يرجى تحديد موقعك أولاً حتى تُحسب مواقيت الصلاة.</string>
+    <string name="intro_calculation_auto_note">تم اختيار طريقة الحساب تلقائياً بحسب دولتك. غيّرها فقط إذا كان مسجدك المحلي يعتمد طريقة أخرى.</string>
+    <string name="intro_final_title">اطمئن أن الأذان سيعمل دائماً</string>
+    <string name="intro_final_body">الأذان بالصوت والاهتزاز والإشعار مفعّل بالفعل للصلوات الخمس، فلا يلزمك تفعيل شيء. يحتاج أندرويد إلى الأذونات التالية ليبدأ الأذان في موعده بالضبط حتى والهاتف في وضع الخمول. يمكنك تغيير أي شيء لاحقاً من الإعدادات.</string>
+    <string name="intro_permissions_title">أذونات يحتاجها الأذان</string>
+    <string name="intro_permission_notifications_title">الإشعارات</string>
+    <string name="intro_permission_notifications_body">لإظهار إشعار الصلاة وتمكينك من إيقاف الأذان.</string>
+    <string name="intro_permission_exact_alarm_title">المنبهات والتذكيرات</string>
+    <string name="intro_permission_exact_alarm_body">ليبدأ الأذان في الثانية المحددة بدلاً من التأخر بضع دقائق.</string>
+    <string name="intro_permission_fullscreen_title">العرض فوق شاشة القفل</string>
+    <string name="intro_permission_fullscreen_body">لفتح شاشة الأذان والهاتف مقفل.</string>
+    <string name="intro_permission_granted">ممنوح</string>
+    <string name="intro_permission_required">مطلوب</string>
+    <string name="intro_permissions_grant_button">منح الأذونات</string>
+    <string name="intro_permissions_all_granted">كل شيء جاهز. سيصلك الأذان في موعده.</string>
+    <string name="intro_alarm_icon_title">إخفاء أيقونة المنبه (اختياري)</string>
+    <string name="intro_alarm_icon_help">مخصص لهواتف Google Pixel وما يشبهها التي تُبقي أيقونة منبه دائمة في شريط الحالة (وقد تتعارض مع الشحن المتكيّف). فعّله لتجنبها. وإن لم تزعجك الأيقونة فاتركه مطفأً: الوضع الافتراضي هو الأكثر موثوقية لإيصال الأذان.</string>
+    <!-- Unified Readiness & Device Detection -->
+    <string name="readiness_shield_title">درع جاهزية الأذان وإصلاح المشاكل</string>
+    <string name="readiness_meter_complete">🎉 هاتفك محصن وجاهز 100% للأذان</string>
+    <string name="readiness_meter_incomplete">الخيارات الأساسية لحصانة الأذان</string>
+    <string name="readiness_core_pillars_title">⭐ الخيارات ذات الأهمية القصوى (لتشغيل كل شيء في التطبيق):</string>
+    <string name="readiness_device_section_title">📱 إعداد خاص بنوع هاتفك المكتشف تلقائياً:</string>
+    <string name="readiness_change_device">تغيير ▾</string>
+    <string name="readiness_select_device_hint">اختر نوع هاتفك أو نظامك يدوياً:</string>
+    <string name="readiness_pillar1_title">1. 🔔 إشعار الأذان وإضاءة شاشة القفل</string>
+    <string name="readiness_pillar1_desc">لإظهار شاشة الأذان وتشغيل الشاشة تلقائياً عند دخول الوقت</string>
+    <string name="readiness_pillar2_title">2. ⏱️ المنبهات الدقيقة (في الثانية الصفر)</string>
+    <string name="readiness_pillar2_desc">لبدء الأذان في الثانية المحددة بدقة دون تأخير النظام</string>
+    <string name="readiness_pillar3_title">3. 🔋 استثناء قيود البطارية (Doze Mode)</string>
+    <string name="readiness_pillar3_desc">منع أندرويد من كتم أو تأخير صوت الأذان في الخلفية لتوفير الطاقة</string>
+    <string name="readiness_pillar4_title">4. 🌙 تخطي الوضع الصامت / عدم الإزعاج</string>
+    <string name="readiness_pillar4_desc">لسماع صوت أذان الفجر حتى لو كان هاتفك صامتاً أثناء نومك</string>
+    <string name="readiness_status_granted">محصّن ومسموح</string>
+    <string name="readiness_status_needed">مطلوب للعمل</string>
+    <string name="readiness_status_optional">اختياري ومستحسن</string>
+    <string name="readiness_fix_button">تفعيل / إصلاح</string>
+    <string name="readiness_device_detected_label">نوع الهاتف المكتشف:</string>
+    <string name="readiness_device_pixel_desc">مخصص لهواتف Pixel لتجنب تعارض الشحن المتكيف وأيقونة المنبه الدائمة في شريط الحالة</string>
+    <string name="readiness_device_xiaomi_desc">تفعيل البدء التلقائي (Autostart) لحماية التطبيق من إيقاف واجهة MIUI / HyperOS للأذان</string>
+    <string name="readiness_device_samsung_desc">إضافة التطبيق إلى «التطبيقات غير الساكنة» (Never Sleeping Apps) في نظام سامسونج One UI</string>
+    <string name="readiness_device_huawei_desc">السماح بالتشغيل التلقائي وإدارة التطبيق يدوياً في إعدادات البطارية</string>
+    <string name="readiness_device_oppo_desc">السماح بالنشاط في الخلفية وإيقاف التجميد السريع في ColorOS / OxygenOS</string>
+    <string name="readiness_device_generic_desc">هاتفك يعتمد المعايير القياسية لنظام أندرويد، الأركان الأربعة بالأعلى كافية تماماً لحصانة الأذان.</string>
+    <string name="readiness_toggle_off">غير مفعّل [ OFF ]</string>
+    <string name="readiness_toggle_on">مفعّل [ ON ]</string>
+    <string name="readiness_score_format">%1$d%% جاهزية</string>
+    <string name="calc_custom_angles_button">تخصيص طريقة الحساب والزوايا ▾</string>
+    <string name="calc_custom_angles_collapse">إخفاء تخصيص طريقة الحساب ▴</string>
+    <string name="calc_method_auto_selected">طريقة الحساب المعتمدة تلقائياً:</string>
+    <string name="dnd_override_short_title">4. 🌙 تخطي الوضع الصامت / عدم الإزعاج</string>
+    <string name="dnd_override_short_desc">لسماع صوت أذان الفجر حتى لو كان هاتفك صامتاً أثناء نومك</string>
+    <string name="location_quick_cities">مدن مقترحة سريعة:</string>
+    <!-- Settings menu sections -->
+    <string name="settings_section_prayer_times">الصلاة والمواقيت</string>
+    <string name="settings_section_alerts">التنبيهات والتذكيرات</string>
+    <string name="settings_section_appearance_tools">المظهر والأدوات الإسلامية</string>
+    <string name="settings_section_system">النظام والنسخ الاحتياطي</string>
+
+    <!-- Category headers for Interface Settings -->
+    <string name="interface_category_theme">المظهر والسمة</string>
+    <string name="interface_category_theme_desc">ألوان الواجهة وحجم الخطوط والعناصر</string>
+    <string name="interface_category_language_time">اللغة والأرقام والوقت</string>
+    <string name="interface_category_language_time_desc">لغة التطبيق، شكل الأرقام، وتنسيق الساعات</string>
+    <string name="interface_category_prayers_countdown">أوقات الصلاة والعد التنازلي</string>
+    <string name="interface_category_prayers_countdown_desc">تخصيص الصلوات المعروضة والعد التنازلي للوقت القادم</string>
+    <string name="interface_category_calendars_shortcuts">التقاويم واختصارات الشاشة</string>
+    <string name="interface_category_calendars_shortcuts_desc">التقويم الهجري والثانوي، وأزرار الرأس السريعة</string>
+
+    <!-- Home Shortcuts Enhancements -->
+    <string name="shortcut_counter_desc">المسبحة الإلكترونية وعداد الاستغفار</string>
+    <string name="shortcut_silence">وضع الصامت للمسجد</string>
+    <string name="shortcut_silence_desc">كتم صوت الأذان والهاتف أثناء الصلاة في المسجد</string>
+    <string name="shortcut_theme_toggle">تبديل المظهر السريع</string>
+    <string name="shortcut_theme_toggle_desc">التبديل الفوري بين السمة الفاتحة والداكنة</string>
+    <string name="shortcut_nateega">إعدادات ودجت النتيجة</string>
+    <string name="shortcut_nateega_desc">تخصيص ودجت النتيجة والتحكم في الحكم اليومية</string>
+    <string name="shortcut_qibla_desc">بوصلة تحديد اتجاه القبلة</string>
+    <string name="shortcut_monthly_view_desc">جدول مواقيت الصلاة لكامل الشهر</string>
+    <string name="shortcuts_selected_count">تم اختيار %1$d من %2$d مسموح بها</string>
+
+    <!-- العبادات والمسبحة والأذكار (حصن المسلم) -->
+    <string name="settings_section_worship">العبادات والأذكار</string>
+    <string name="settings_tasbih_title">المسبحة الإلكترونية</string>
+    <string name="settings_tasbih_subtitle">فتح المسبحة والتسبيح بالصوت والعداد</string>
+    <string name="settings_azkar_title">الأذكار (حصن المسلم)</string>
+    <string name="settings_azkar_subtitle">أذكار الصباح والمساء والأدعية الصحيحة المأثورة</string>
+
+    <string name="azkar_title">الأذكار</string>
+    <string name="azkar_subtitle">حصن المسلم</string>
+    <string name="azkar_search_placeholder">ابحث في الأبواب أو الأذكار أو التخريج…</string>
+    <string name="azkar_daily_shortcuts">الأذكار اليومية السريعة</string>
+    <string name="azkar_all_categories">جميع أبواب الأذكار</string>
+    <string name="azkar_favorites_filter">المفضلة</string>
+    <string name="azkar_all_filter">الكل</string>
+    <string name="azkar_no_results">لا توجد نتائج مطابقة للبحث</string>
+    <string name="azkar_no_favorites">لا توجد أذكار في المفضلة بعد</string>
+    <string name="azkar_dhikr_progress">الذكر %1$d من %2$d</string>
+    <string name="azkar_previous">السابق</string>
+    <string name="azkar_next">التالي</string>
+    <string name="azkar_remaining">المتبقي</string>
+    <string name="azkar_completed">تمّ بفضل الله</string>
+    <string name="azkar_repeat_count">%1$d مرات</string>
+    <string name="azkar_repeat_once">مرة واحدة</string>
+    <string name="azkar_source_label">التخريج</string>
+    <string name="azkar_benefit_label">الفضل والفائدة</string>
+    <string name="azkar_translation_label">المعنى</string>
+    <string name="azkar_copied_toast">تم نسخ الذكر</string>
+    <string name="azkar_reset_dhikr">إعادة العدّ</string>
+    <string name="azkar_copy_dhikr">نسخ</string>
+    <string name="azkar_dhikr_count_format">%1$d أذكار</string>
+    <string name="azkar_tap_to_count">المس للعدّ</string>
+
+    <string name="azkar_cat_morning">أذكار الصباح</string>
+    <string name="azkar_cat_evening">أذكار المساء</string>
+    <string name="azkar_cat_sleep">أذكار النوم</string>
+    <string name="azkar_cat_waking">أذكار الاستيقاظ</string>
+    <string name="azkar_cat_prayer">أذكار الوضوء والصلاة</string>
+    <string name="azkar_cat_home_mosque">أذكار المنزل والمسجد</string>
+    <string name="azkar_cat_travel">أذكار السفر والركوب</string>
+    <string name="azkar_cat_distress">أذكار الكرب والهمّ</string>
+    <string name="azkar_cat_istighfar">الاستغفار والتسبيح</string>
+    <string name="azkar_cat_food">أذكار الطعام والشراب</string>
+
+    <string name="nav_tasbih">المسبحة</string>
+    <string name="settings_section_calendar_schedule">التقويم والإمساكية</string>
+    <string name="settings_calendar_title">التقويم الهجري والميلادي</string>
+    <string name="settings_calendar_subtitle">استعراض التقويم الهجري والميلادي والمناسبات الإسلامية</string>
+
+
+    <!-- Localized UI Strings (15 languages) -->
+    <string name="monthly_view">التقويم والعرض الشهري</string>
+    <string name="reminders">التذكيرات</string>
+    <string name="qada_counter">عداد القضاء</string>
+    <string name="upcoming_events">المناسبات القادمة</string>
+    <string name="prayer_time_adjusted">%1$s: %2$s</string>
+    <string name="compass_calibrating">جاري معايرة البوصلة</string>
+    <string name="compass_magnetic_interference">تم اكتشاف تشويش مغناطيسي</string>
+    <string name="compass_temporarily_unavailable">غير متاح مؤقتاً</string>
+    <string name="reschedule_when">%1$s، %2$s</string>
+    <string name="cal_corresponding_date">الموافق: %1$s</string>
+    <string name="cal_monthly_occasions_title">مناسبات وأيام صيام هذا الشهر</string>
+    <string name="cal_hide_list">إخفاء ▲</string>
+    <string name="cal_show_list">عرض القائمة (%1$d) ▼</string>
+    <string name="cal_select_day">اختر 👈</string>
+    <string name="surah_paper_warm">📜 دافئ</string>
+    <string name="surah_paper_white">☀️ أبيض</string>
+    <string name="surah_jumped_bookmark">تم الانتقال إلى فاصل القراءة (آية %1$s)</string>
+    <string name="surah_return_bookmark_cd">العودة للفاصل</string>
+    <string name="surah_ayah_short">آية %1$s</string>
+    <string name="surah_bookmark_at">مكان وقوفك عند الآية (%1$s)</string>
+    <string name="surah_bookmark_hint">المس أي آية ثم اضغط (وقفت هنا) لحفظ مكانك</string>
+    <string name="surah_bookmark_banner">آخر مكان وقفت عنده: آية (%1$s)</string>
+    <string name="surah_jumped_ayah">تم الانتقال إلى الآية (%1$s)</string>
+    <string name="surah_continue_here">أكمل من هنا ↩</string>
+    <string name="surah_meta_ayahs">%1$s • %2$s آيات</string>
+    <string name="surah_order_num">ترتيبها %1$s</string>
+    <string name="surah_bookmark_removed">تم إلغاء حفظ المكان</string>
+    <string name="surah_bookmark_saved">تم حفظ مكان وقوفك عند الآية (%1$s)</string>
+    <string name="surah_remove_bookmark">إلغاء الحفظ</string>
+    <string name="surah_stopped_here">وقفت هنا</string>
+    <string name="surah_prev_place">مكاني السابق (%1$s)</string>
+    <string name="surah_copied_ayah">تم نسخ الآية (%1$s)</string>
+    <string name="surah_copy">نسخ</string>
+    <string name="surah_kahf_virtue">نورٌ ما بين الجمعتين</string>
+    <string name="surah_mulk_virtue">المانعة من عذاب القبر</string>
+    <string name="surah_footer_hint">المس أي آية لحفظ مكانك أو نسخها</string>
+    <string name="tasbih_mic_permission_toast">يرجى السماح بإذن الميكروفون لاستخدام العدّ الصوتي</string>
+    <string name="tasbih_floating_enabled">تم تفعيل الفقاعة العائمة</string>
+    <string name="tasbih_floating_disabled">تم إغلاق المسبحة العائمة</string>
+    <string name="tasbih_feedback_vibrate">الاستجابة الحسية: اهتزاز فقط 📳</string>
+    <string name="tasbih_feedback_sound_vibrate">الاستجابة الحسية: صوت واهتزاز 🔊</string>
+    <string name="tasbih_feedback_silent">الاستجابة الحسية: صامت 🔇</string>
+    <string name="tasbih_tap_anywhere">المس في أي مكان للتسبيح</string>
+    <string name="tasbih_reset_title">إعادة التصفير</string>
+    <string name="tasbih_reset_confirm_msg">هل تريد تصفير عدّاد الذكر الحالي فقط أم تصفير المجموع الكلي وجميع الأذكار؟</string>
+    <string name="tasbih_reset_current">تصفير الذكر الحالي</string>
+    <string name="tasbih_reset_all">تصفير الكل</string>
+    <string name="tasbih_custom_target_title">تعديل الهدف المخصص</string>
+    <string name="tasbih_custom_target_desc">أدخل رقم الهدف المخصص ليتم حفظه دائماً في الدائرة المخصصة:</string>
+    <string name="tasbih_target_hint">الهدف (مثال: 300)</string>
+    <string name="tasbih_save_activate">حفظ وتفعيل</string>
+    <string name="tasbih_choose_dhikr">اختر الذكر</string>
+    <string name="tasbih_delete_dhikr">حذف الذكر</string>
+    <string name="tasbih_add_new_dhikr">إضافة ذكر جديد (+)</string>
+    <string name="tasbih_add_custom_dhikr">إضافة ذكر مخصص</string>
+    <string name="tasbih_dhikr_text_label">نص الذكر</string>
+    <string name="tasbih_target_label">الهدف</string>
+    <string name="tasbih_overlay_title">إذن المسبحة العائمة</string>
+    <string name="tasbih_overlay_msg">لعرض فقاعة المسبحة العائمة فوق التطبيقات الأخرى أثناء التصفح، يرجى تفعيل إذن «الظهور فوق التطبيقات الأخرى» لتطبيق الأذان.</string>
+    <string name="tasbih_open_permission">فتح إعدادات الإذن</string>
+    <string name="tasbih_later">لاحقاً</string>
+    <string name="tasbih_voice_btn">تسبيح بالصوت</string>
+    <string name="tasbih_sensory_cd">الاستجابة الحسية</string>
+    <string name="tasbih_floating_cd">المسبحة العائمة</string>
+    <string name="tasbih_settings_stats">الإعدادات والإحصائيات</string>
+    <string name="tasbih_custom_btn">تخصيص</string>
+    <string name="tasbih_total_label">المجموع الكلي:</string>
+    <string name="tasbih_cycle_label">الدورة: %1$s</string>
+    <string name="tasbih_reset_btn">تصفير</string>
+    <string name="tasbih_reset_current_menu">تصفير العداد الحالي</string>
+    <string name="tasbih_reset_total_menu">تصفير المجموع الكلي</string>
+    <string name="tasbih_total_all_label">المجموع الكلي للتسبيحات</string>
+    <string name="tasbih_wird_title">الورد المتسلسل (٣٣ - ٣٣ - ٣٤)</string>
+    <string name="tasbih_wird_subtitle">ينتقل تلقائياً: سبحان الله ← الحمد لله ← الله أكبر</string>
+    <string name="tasbih_volume_keys_title">العدّ بأزرار الصوت الجانبية</string>
+    <string name="tasbih_volume_keys_subtitle">استخدم أزرار رفع/خفض الصوت (أو المسافة) للتسبيح</string>
+    <string name="ws_title">إعدادات وتخصيص الودجات</string>
+    <string name="ws_done">تم</string>
+    <string name="ws_cat_calendars">🗓️ التقاويم والرزمانة</string>
+    <string name="ws_cat_dials">⏱️ الأقراص والعدادات التناقصية</string>
+    <string name="ws_cat_modern">✨ أشكال مودرن ومصغرة</string>
+    <string name="ws_nateega_title">رزمانة الحائط اليومية</string>
+    <string name="ws_nateega_sub">النتيجة الورقية مع التاريخ الهجري، الميلادي والقبطي ومواقيت الصلاة</string>
+    <string name="ws_desk_title">التقويم المكتبي المتطور</string>
+    <string name="ws_desk_sub">مصفوفة الشهر كاملة مع عداد تناقصي ومواقيت الصلوات وتتكيف تلقائياً مع الحجم</string>
+    <string name="ws_compact_title">المواقيت والتقويم المدمج</string>
+    <string name="ws_compact_sub">شريط المواقيت المدمج مع التاريخ والعد التنازلي وحكمة اليوم</string>
+    <string name="ws_circle_title">قرص الصلاة القادمة الدائري</string>
+    <string name="ws_circle_sub">حلقة تقدم دائرية مع عداد زمني تناقصي حتى موعد الأذان</string>
+    <string name="ws_square_title">بطاقة الصلاة القادمة المربعة</string>
+    <string name="ws_square_sub">تصميم كارت مربع أنيق متناسق مع الأيقونات وشريط تقدم أفقي</string>
+    <string name="ws_slim_title">الشريط النحيف العصري</string>
+    <string name="ws_slim_sub">شريط أفقي رفيع يشغل صفاً واحداً يدمج الساعة والصلوات</string>
+    <string name="ws_arch_title">محراب المسجد والقباب التراثي</string>
+    <string name="ws_arch_sub">إطار إسلامي تراثي مع الآية القرآنية وجدول الصلوات الست</string>
+    <string name="ws_pill_title">الكبسولة الذكية للمواقيت</string>
+    <string name="ws_pill_sub">كبسولة مدمجة تعرض الحالة الروحية والوقت المتبقي للصلاة القادمة</string>
+    <string name="ws_live_preview">معاينة حية لشكل الودجت</string>
+    <string name="ws_theme_section">تصميم الودجت والثيم</string>
+    <string name="ws_clock_section">الساعة الرقمية</string>
+    <string name="ws_clock_pos_label">موضع وحجم الساعة</string>
+    <string name="ws_clock_pos_placeholder">اختر موضع الساعة</string>
+    <string name="ws_clock_pos_desc">اختر بين عرض الساعة كبيرة في المنتصف، أو جانبية مع اليوم، أو إخفائها</string>
+    <string name="ws_elements_section">العناصر المعروضة داخل الودجت</string>
+    <string name="ws_show_coptic_title">عرض التاريخ القبطي</string>
+    <string name="ws_show_coptic_sub">إظهار مربع التاريخ القبطي في المنتصف (مثل: ٧ هاتور)</string>
+    <string name="ws_show_countdown_title">العد التنازلي ونسبة الصلاة</string>
+    <string name="ws_show_countdown_sub">إظهار الوقت المتبقي للصلاة القادمة مع شريط التقدم</string>
+    <string name="ws_show_wisdom_title">مأثورة وحكمة اليوم</string>
+    <string name="ws_show_wisdom_sub">إظهار حكمة ومأثورة يومية متجددة أسفل الودجت</string>
+    <string name="ws_desk_cal_type_section">نوع التقويم المعروض في الشبكة</string>
+    <string name="ws_desk_cal_type_label">التقويم المعتمد للشبكة الشهرية</string>
+    <string name="ws_desk_cal_type_placeholder">اختر نوع التقويم</string>
+    <string name="ws_desk_cal_type_desc">اختر ما إذا كنت ترغب في عرض مصفوفة أيام الشهر بالتقويم الميلادي أو الهجري أو القبطي</string>
+    <string name="ws_desk_countdown_section">العداد التناقصي للأذان</string>
+    <string name="ws_desk_countdown_title">إظهار شريط العداد التناقصي</string>
+    <string name="ws_desk_countdown_sub">عرض شريط بالوقت المتبقي للصلاة القادمة؛ إخفاؤه يمنح شبكة التقويم ومواقيت الصلاة مساحة أكبر</string>
+    <string name="ws_desk_highlight_section">تظليل وتمييز الصلاة القادمة</string>
+    <string name="ws_desk_highlight_title">تظليل الصلاة القادمة</string>
+    <string name="ws_desk_highlight_sub">تمييز وتظليل خانة الصلاة القادمة بلون زمردي واضح في جدول المواقيت</string>
+    <string name="ws_date_options_section">خيارات عرض التاريخ والتقويم</string>
+    <string name="ws_displayed_calendar">التقويم المعروض</string>
+    <string name="ws_displayed_calendar_desc">يمكنك عرض التاريخين معاً (هجري وميلادي)، أو الاكتفاء بأحدهما فقط</string>
+    <string name="ws_date_order_label">ترتيب التاريخين (يمين / يسار)</string>
+    <string name="ws_date_order_placeholder">اختر الترتيب</string>
+    <string name="ws_date_order_desc">حدد أي التاريخين يظهر أولاً</string>
+    <string name="ws_slim_elements_section">عناصر الشريط</string>
+    <string name="ws_show_city_title">إظهار اسم المدينة</string>
+    <string name="ws_show_city_sub">عرض اسم المدينة أسفل الساعة الرقمية؛ إخفاؤه يمنح الساعة مظهراً أكبر وأكثر توسيطاً</string>
+    <string name="ws_about_widget">عن هذا الودجت</string>
+    <string name="ws_how_to_add">💡 للإضافة: اضغط مطولاً على شاشتك الرئيسية، ثم اختر الودجات وأضف هذا الودجت.</string>
+    <string name="nws_title">شريط الإشعار الدائم</string>
+    <string name="nws_sec1_prayer">1. مربع مواقيت الصلاة الدائم</string>
+    <string name="nws_enable_prayer_notif">تفعيل إشعار مواقيت الصلاة</string>
+    <string name="nws_enable_prayer_notif_sub">إبقاء إشعار بمواقيت الصلاة نشطاً في لوحة التنبيهات وشاشة القفل</string>
+    <string name="nws_choose_layout">اختر شكل وطريقة عرض مواقيت الصلاة:</string>
+    <string name="nws_layout_table">جدول المواقيت</string>
+    <string name="nws_layout_table_sub">مصفوفة الصلوات الست بمواعيدها</string>
+    <string name="nws_layout_compact">الشريط المصغر</string>
+    <string name="nws_layout_compact_sub">الصلاة القادمة وموعد الأذان</string>
+    <string name="nws_countdown_title">العد التنازلي للصلاة القادمة</string>
+    <string name="nws_countdown_sub">إظهار الوقت المتبقي بالأرقام والعد التنازلي حتى موعد الصلاة القادمة</string>
+    <string name="nws_sec2_capsule">2. مربع الكبسولة الشرعية الذكية (إشعار رفيق بجوارها)</string>
+    <string name="nws_capsule_badge">إشعار رفيق مستقل</string>
+    <string name="nws_capsule_desc">توجيه روحي حي (ماذا أفعل الآن؟) يرشدك للعبادة والذكر المناسب للحظتك الحالية (الضحى، قيام الليل، أذكار الصباح والمساء، ساعة الجمعة) في لوحة التنبيهات وشاشة القفل.</string>
+    <string name="nws_enable_capsule">تفعيل ظهور الكبسولة في شريط الإشعارات</string>
+    <string name="nws_enable_capsule_sub">تعمل كإشعار رفيق مستقل بجوار مواقيت الصلاة باستقلالية تامة</string>
+    <string name="nws_capsule_mode_label">اختر نظام وطريقة عمل الكبسولة الشرعية:</string>
+    <string name="nws_mode_smart_title">1. المحرك العبادي اللحظي</string>
+    <string name="nws_mode_smart_tag">الافتراضي والموصى به</string>
+    <string name="nws_mode_smart_sub">تنبيهات ذكية لحظية تظهر تلقائياً في شريط الإشعارات عند مواسم العبادة والفضل السبعة على مدار 24 ساعة:</string>
+    <string name="nws_mode_persistent_title">2. إشعار دائم مستمر</string>
+    <string name="nws_mode_persistent_tag">دائم 24 ساعة</string>
+    <string name="nws_mode_persistent_sub">يعرض توجيه اللحظة الحالية للعبادة بشكل مستمر وثابت بجوار إشعار مواقيت الصلاة في شريط الإشعارات.</string>
+    <string name="nws_daily_dhikr_title">تنبيه يومي بذكر مخصص (خيار إضافي)</string>
+    <string name="nws_daily_dhikr_sub">تذكيرك في وقت محدد يومياً بورد أو ذكر تختاره</string>
+    <string name="nws_daily_dhikr_header">تخصيص وقت ونص الذكر اليومي:</string>
+    <string name="nws_daily_time_label">موعد التنبيه اليومي</string>
+    <string name="nws_daily_time_placeholder">اختر موعد التذكير بالذكر</string>
+    <string name="nws_daily_text_label">نص الذكر أو الورد</string>
+    <string name="nws_daily_text_placeholder">أدخل نص الذكر أو الدعاء...</string>
+    <string name="nws_quick_suggestions">اقتراحات سريعة لأذكار نبوية:</string>
+    <string name="nws_capsule_preview">معاينة حية لشكل وتصميم الكبسولة:</string>
+    <string name="nws_sec3_battery">3. استقرار الإشعار في الخلفية واستثناء البطارية</string>
+    <string name="nws_battery_title">استقرار الإشعار في الخلفية</string>
+    <string name="nws_battery_protected">محمي ومستقر</string>
+    <string name="nws_battery_at_risk">معرض للإيقاف</string>
+    <string name="nws_battery_protected_desc">التطبيق مستثنى من قيود توفير الطاقة بنجاح؛ مواقيت الصلاة والكبسولة الشرعية ستعمل بدقة 100% دون أن يغلقها النظام.</string>
+    <string name="nws_battery_risk_desc">نظام أندرويد قد يوقف تحديث الإشعار لتوفير البطارية. انقر على الزر بالأسفل لاستثناء التطبيق وضمان التحديث اللحظي.</string>
+    <string name="nws_battery_exempt_btn">استثناء التطبيق من موفر الطاقة (حماية الإشعار)</string>
+    <string name="nws_battery_settings_btn">فتح إعدادات تحسين البطارية بالنظام</string>
+    <string name="nws_autostart_btn">⚙️ إعدادات التشغيل التلقائي للهاتف (Auto-start)</string>
+
+    <!-- Localized UI Strings (15 languages) -->
+    <string name="tasbih_save">حفظ</string>
 </resources>

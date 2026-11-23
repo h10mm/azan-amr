@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A single header slot (date or location name). Added to custom_widget_header via addView; the
-     weight makes 1 cell fill the header and 2 cells split it evenly. Text + color set at runtime. -->
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/cw_header_text"
     android:layout_width="0dp"
     android:layout_height="wrap_content"
     android:layout_weight="1"
+    android:layout_marginStart="3dp"
+    android:layout_marginEnd="3dp"
+    android:background="@drawable/widget_header_capsule"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
     android:gravity="center"
     android:maxLines="1"
+    android:textStyle="bold"
     android:textColor="@color/custom_widget_text"
-    android:textSize="13sp" />
+    android:textSize="12sp" />

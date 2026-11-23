@@ -5,6 +5,10 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
+# Open-source transparency: keep class/method names readable (no obfuscation)
+# while still shrinking unused code and resources for a smaller APK.
+-dontobfuscate
+
 # Preserve line numbers for readable release crash stack traces,
 # then hide the original source file name.
 -keepattributes SourceFile,LineNumberTable

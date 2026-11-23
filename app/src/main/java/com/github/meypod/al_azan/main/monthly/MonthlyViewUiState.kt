@@ -8,12 +8,18 @@ import kotlinx.datetime.LocalDate
 @Immutable
 data class MonthlyDayRow(
     val day: String,
+    val weekday: String = "",
     val fajr: String,
+    val sunrise: String = "",
     val dhuhr: String,
     val asr: String,
     val maghrib: String,
     val isha: String,
     val isToday: Boolean = false,
+    val eventTitle: String? = null,
+    val eventBadge: String? = null,
+    val isWhiteDay: Boolean = false,
+    val isFastingDay: Boolean = false,
 )
 
 enum class MonthlyCalendarMode {

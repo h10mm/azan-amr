@@ -8,7 +8,10 @@ import com.github.meypod.al_azan.core.domain.model.adhan.ShariaTimesResult
 import com.github.meypod.al_azan.core.domain.model.adhan.timesOrNull
 import com.github.meypod.al_azan.core.domain.model.alarm.AlarmSettings
 import com.github.meypod.al_azan.core.domain.model.alarm.SkippedAlarm
+import com.github.meypod.al_azan.core.domain.model.settings.HOME_SHORTCUTS_IN_ORDER
+import com.github.meypod.al_azan.core.domain.model.settings.HomeShortcut
 import com.github.meypod.al_azan.core.domain.model.settings.Settings
+import com.github.meypod.al_azan.core.domain.model.settings.ThemeColor
 import com.github.meypod.al_azan.core.domain.repository.AlarmRepository
 import com.github.meypod.al_azan.core.domain.repository.AlarmSettingsRepository
 import com.github.meypod.al_azan.core.domain.repository.CalculationSettingsRepository
@@ -90,7 +93,7 @@ class HomeViewModel
         return HomePermissionCheck(
             adhanScheduled = alarmSettings.hasAnyEnabledSchedule(),
             hasScheduledAlarms = alarmRepository.getScheduled().isNotEmpty(),
-            fullScreenRequired = alarmSettings.hasAnySoundSchedule(),
+            fullScreenRequired = !alarmSettings.dontTurnOnScreen && alarmSettings.hasAnySoundSchedule(),
             // Both "bypass DND" and "auto-silent on dismiss" rely on notification-policy access.
             dndRequired = settingsRepository.data.first().bypassDnd || alarmSettings.autoSilentOnDismiss,
         )
@@ -166,7 +169,36 @@ class HomeViewModel
             HomeUiAction.OnAboutLinkClick -> onAboutLinkClick()
             HomeUiAction.OnMonthlyViewClick -> onMonthlyViewClick()
             HomeUiAction.OnDeveloperLinkClick -> onDeveloperLinkClick()
+            HomeUiAction.OnCalendarClick -> onCalendarClick()
+            HomeUiAction.OnSilenceShortcutClick -> onSilenceShortcutClick()
+            HomeUiAction.OnThemeToggleShortcutClick -> onThemeToggleShortcutClick()
+            HomeUiAction.OnNateegaShortcutClick -> onNateegaShortcutClick()
         }
+    }
+
+    private fun onSilenceShortcutClick() {
+        NavigationController.navigateTo(Route.Main.SilenceStatus)
+    }
+
+    private fun onThemeToggleShortcutClick() {
+        viewModelScope.launch {
+            settingsRepository.update { current ->
+                val nextTheme = when (current.themeColor) {
+                    ThemeColor.ClassicLight -> ThemeColor.Dark
+                    ThemeColor.Dark -> ThemeColor.MidnightBlue
+                    ThemeColor.MidnightBlue -> ThemeColor.ClassicLight
+                }
+                current.copy(themeColor = nextTheme)
+            }
+        }
+    }
+
+    private fun onNateegaShortcutClick() {
+        NavigationController.navigateTo(Route.Main.Settings.WidgetSettings.NateegaAppearance)
+    }
+
+    private fun onCalendarClick() {
+        NavigationController.navigateTo(Route.Main.CalendarView)
     }
 
     private fun onCalendarDateClick() {
@@ -247,7 +279,14 @@ class HomeViewModel
     private fun collectSystemChange() {
         viewModelScope.launch {
             systemChangeRepository.data.collect {
-                _uiState.update { it.copy(currentInstant = Clock.System.now()) }
+                val now = Clock.System.now()
+                _uiState.update { state ->
+                    val isViewingToday = state.viewingInstant.toLocalDate() == state.currentInstant.toLocalDate()
+                    state.copy(
+                        currentInstant = now,
+                        viewingInstant = if (isViewingToday) now else state.viewingInstant,
+                    )
+                }
             }
         }
     }
@@ -255,14 +294,32 @@ class HomeViewModel
     private fun collectTimeTick() {
         viewModelScope.launch {
             tickFlow().collect { now ->
-                val nextShariaTime = uiState.value.nextShariaTime
-                if (nextShariaTime != null && now > nextShariaTime.prayerTime) {
-                    // Countdown elapsed. The scheduled recompute (updateScreenJob) relies on a
-                    // coroutine delay that the OS freezes while the app is backgrounded, so it can
-                    // miss the boundary (notably for prayers with no alarm to wake the process).
-                    // Force a recompute here so the box self-heals within a tick once resumed.
-                    _uiState.update { it.copy(currentInstant = now) }
-                } else if (uiState.value.showNextPrayerCountdown) {
+                val state = uiState.value
+                val nextShariaTime = state.nextShariaTime
+                val minuteChanged = (now.epochSeconds / 60L) != (state.currentInstant.epochSeconds / 60L)
+                val prayerPassed = nextShariaTime != null && now > nextShariaTime.prayerTime
+
+                if (minuteChanged || prayerPassed) {
+                    val isViewingToday = state.viewingInstant.toLocalDate() == state.currentInstant.toLocalDate()
+                    _uiState.update { current ->
+                        current.copy(
+                            currentInstant = now,
+                            viewingInstant = if (isViewingToday) now else current.viewingInstant,
+                            countdownText = if (current.showNextPrayerCountdown && current.nextShariaTime != null &&
+                                now <= current.nextShariaTime.prayerTime
+                            ) {
+                                formatCountdownToHHmmss(
+                                    now,
+                                    current.nextShariaTime.prayerTime,
+                                    current.numberingSystem,
+                                    current.locale,
+                                )
+                            } else {
+                                current.countdownText
+                            },
+                        )
+                    }
+                } else if (state.showNextPrayerCountdown) {
                     _uiState.update {
                         if (it.nextShariaTime != null && now <= it.nextShariaTime.prayerTime) {
                             it.copy(
@@ -316,20 +373,7 @@ class HomeViewModel
                     } else {
                         null
                     }
-                    val highlightedShariaTime =
-                        if (settings.highlightCurrentPrayer && calcSettings.parameters != null && location != null) {
-                            getCurrentShariaTimesUseCase(
-                                instant = currentInstant,
-                                calculationParameters = calcSettings.parameters,
-                                calculationAdjustments = calcSettings.calculationAdjustments,
-                                arabicCalendar = settings.selectedArabicCalendar,
-                                locationDetail = location.locationDetail,
-                                midnightMethod = calcSettings.midnightMethod,
-                                excluding = hiddenPrayers,
-                            )
-                        } else {
-                            nextShariaTime
-                        }
+                    val highlightedShariaTime = nextShariaTime
                     val countdownText = if (settings.showHomeNextPrayerCountdown && nextShariaTime != null &&
                         currentInstant <= nextShariaTime.prayerTime
                     ) {
@@ -376,7 +420,8 @@ class HomeViewModel
                         is24Hour = settings.is24HourFormat,
                         hiddenPrayers = settings.hiddenPrayers,
                         isDeveloper = settings.devMode,
-                        homeShortcuts = settings.homeShortcuts,
+                        homeShortcuts = (settings.homeShortcuts.ifEmpty { listOf(HomeShortcut.ThemeToggle) })
+                            .filter { it in HOME_SHORTCUTS_IN_ORDER },
                         hideToolbarCalendar = settings.hideToolbarCalendar,
                         swapHomeCalendars = settings.swapHomeCalendars,
                     )
