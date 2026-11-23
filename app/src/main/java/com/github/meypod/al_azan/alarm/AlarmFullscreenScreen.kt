@@ -92,23 +92,12 @@ private const val MORPH_DURATION_MS = 260
 
 private enum class DismissAnchor { Rest, Menu }
 
-/**
- * Fullscreen alarm screen — preview-only.
- *
- * States:
- *   Pill          : initial. Press → morphs to Circle.
- *   Circle        : round button. Drag up past positional/velocity threshold → Menu.
- *                   Release below threshold → springs back to Rest, pill returns.
- *   Menu          : action menu. Tap any action → reset to Pill.
- */
 @Composable
 fun AlarmFullscreenScreen(
     uiState: AlarmFullscreenUiState,
     onAction: (AlarmFullscreenUiAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // When the only available action is plain dismiss, the swipe-up menu would hold a single button
-    // duplicating the pill's tap-to-dismiss. Drop the whole drag/menu affordance in that case.
     val menuEnabled = uiState.dismissAndSilentMinutes > 0 ||
         uiState.shortRemindMinutes > 0 ||
         uiState.longRemindMinutes > 0
@@ -148,7 +137,7 @@ fun AlarmFullscreenScreen(
             }
         }
     }
-    // Morph to circle (and buzz) only once pulled up past the morph threshold.
+
     val draggedPastMorph by remember {
         derivedStateOf {
             val o = dragState.offset
@@ -163,7 +152,7 @@ fun AlarmFullscreenScreen(
     val isCircle = menuEnabled && !menuVisible && draggedPastMorph
 
     val classic = uiState.themeColor.isClassic()
-    val darkClassic = uiState.themeColor == ThemeColor.ClassicDark
+    val darkClassic = false
     val contentColor = if (classic) MaterialTheme.colorScheme.onBackground else Color.White
     val pattern = rememberPatternImageBitmap(R.drawable.pattern)
 
@@ -322,7 +311,6 @@ fun AlarmFullscreenScreen(
                                     Modifier
                                 },
                             )
-                            // Tapping the pill dismisses, same as "just dismiss" in the swipe-up menu.
                             .pointerInput(Unit) {
                                 detectTapGestures(onTap = { onAction(AlarmFullscreenUiAction.OnDismiss) })
                             }
@@ -370,12 +358,6 @@ fun AlarmFullscreenScreen(
     }
 }
 
-/**
- * Expanding ring behind dismiss button. Uses [graphicsLayer] scale so expansion
- * does not move the button. Absolute expansion in dp is applied to both axes
- * (not a uniform scale) so the pill's wider X does not get stretched disproportionately.
- * Two staggered pulses loop so the second fires while the first is still animating.
- */
 @Composable
 private fun PulseHalo(
     baseWidth: Dp,
@@ -431,6 +413,7 @@ private fun Ring(
     val scaleX = (basePxW + expandPx * t) / basePxW
     val scaleY = (basePxH + expandPx * t) / basePxH
     val alpha = (1f - t) * startAlpha
+
     Box(
         modifier = Modifier
             .width(baseWidth)
@@ -470,7 +453,6 @@ private fun AlarmActionMenu(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Hidden unless the app holds DND policy access (minutes gated to 0 in the ViewModel).
             if (dismissAndSilentMinutes > 0) {
                 MenuPillButton(
                     darkClassic = darkClassic,
@@ -554,7 +536,7 @@ private fun MenuPillButton(
 @Preview(showBackground = true, heightDp = 700, widthDp = 360, name = "Initial pill")
 @Composable
 private fun AlarmFullscreenInitialPreview() {
-    AlAzanTheme(ThemeColor.Light) {
+    AlAzanTheme(ThemeColor.Dark) {
         AlarmFullscreenScreen(
             uiState = AlarmFullscreenUiState(
                 header = stringResource(R.string.alarm_azan_header),
@@ -588,10 +570,10 @@ private fun AlarmFullscreenClassicLightPreview() {
     }
 }
 
-@Preview(showBackground = true, heightDp = 700, widthDp = 360, name = "Classic dark")
+@Preview(showBackground = true, heightDp = 700, widthDp = 360, name = "Midnight Blue")
 @Composable
-private fun AlarmFullscreenClassicDarkPreview() {
-    AlAzanTheme(ThemeColor.ClassicDark) {
+private fun AlarmFullscreenMidnightBluePreview() {
+    AlAzanTheme(ThemeColor.MidnightBlue) {
         AlarmFullscreenScreen(
             uiState = AlarmFullscreenUiState(
                 header = stringResource(R.string.alarm_azan_header),
@@ -600,7 +582,7 @@ private fun AlarmFullscreenClassicDarkPreview() {
                 dismissAndSilentMinutes = 15,
                 shortRemindMinutes = 15,
                 longRemindMinutes = 30,
-                themeColor = ThemeColor.ClassicDark,
+                themeColor = ThemeColor.MidnightBlue,
             ),
             onAction = {},
         )
@@ -610,7 +592,7 @@ private fun AlarmFullscreenClassicDarkPreview() {
 @Preview(showBackground = true, heightDp = 700, widthDp = 360, name = "Menu open")
 @Composable
 private fun AlarmFullscreenMenuPreview() {
-    AlAzanTheme(ThemeColor.Light) {
+    AlAzanTheme(ThemeColor.Dark) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -639,10 +621,10 @@ private fun AlarmMenuClassicLightPreview() {
     ClassicMenuPreview(ThemeColor.ClassicLight)
 }
 
-@Preview(showBackground = true, heightDp = 700, widthDp = 360, name = "Menu classic dark")
+@Preview(showBackground = true, heightDp = 700, widthDp = 360, name = "Menu Midnight Blue")
 @Composable
-private fun AlarmMenuClassicDarkPreview() {
-    ClassicMenuPreview(ThemeColor.ClassicDark)
+private fun AlarmMenuMidnightBluePreview() {
+    ClassicMenuPreview(ThemeColor.MidnightBlue)
 }
 
 @Composable
@@ -655,7 +637,7 @@ private fun ClassicMenuPreview(themeColor: ThemeColor) {
         ) {
             Box(Modifier.align(Alignment.Center)) {
                 AlarmActionMenu(
-                    darkClassic = themeColor == ThemeColor.ClassicDark,
+                    darkClassic = false,
                     dismissAndSilentMinutes = 15,
                     shortRemindMinutes = 15,
                     longRemindMinutes = 30,
